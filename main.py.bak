@@ -1,0 +1,1632 @@
+import asyncio
+import os
+import time
+from datetime import datetime, timedelta, timezone
+import math
+import uuid
+import traceback
+import abc
+from typing import Dict, List, Optional, Tuple, Any, Union, Callable, Awaitable
+import platform
+import sys
+import json
+import hmac
+import hashlib
+import base64
+import aiohttp
+
+import ccxt.async_support as ccxt
+import pandas as pd
+import numpy as np
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram.types import Message, FSInputFile
+from dotenv import load_dotenv
+from bot_logging import BotLogger, logger as general_logger
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from config import REPORTS_DIR, TRADES_EXCEL_FILE, EXCEL_STYLES, TRADE_DIRECTION
+from trade_reporter import TradeReporter
+from strategies import Strategy
+from strategies.BTC_strategy import BTCStrategy
+from strategies.ETH_strategy import ETHStrategy
+import winloop
+winloop.install()
+
+# Создаем логгер бота
+bot_logger = BotLogger(name="trading_bot", log_dir="logs")
+logger = bot_logger.main_logger
+
+# --- Configuration ---
+TARGET_CHAT_ID = -1002586914018  # ID чата для уведомлений
+TIMEFRAME = "45m"  # 15-минутный таймфрейм - оставлен как дефолтный, но будет использоваться только когда нет конкретной стратегии
+
+# Список поддерживаемых таймфреймов Bitget
+SUPPORTED_TIMEFRAMES = [
+    "1m", "3m", "5m", "15m", "30m", "45m",
+    "1H", "4H", "6H", "12H", 
+    "1D", "1W", "1M",
+    "6Hutc", "12Hutc", "1Dutc", "3Dutc", "1Wutc", "1Mutc"
+]
+
+# --- Параметры стратегии ---
+FRAMA_LENGTH = 10
+STC_LENGTH = 21
+VFI_LENGTH = 100
+FIXED_SL_PCT = 0.5  # 0.5% фиксированный стоп-лосс
+TRAIL_TRIGGER_PCT = 0.7  # 0.7% для активации трейлинг-стопа
+TRAIL_STEP_PCT = 0.25  # 0.25% шаг трейлинг-стопа
+TRAIL_MODE = True
+
+# --- Загружаем переменные из .env ---
+load_dotenv()
+
+# --- API ---
+API_KEY = os.getenv("API_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
+PASSPHRASE = os.getenv("PASSPHRASE")
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+
+# --- Файл для хранения истории сделок ---
+TRADES_FILE = "trades_history.xlsx"
+all_trades_history = []  # Список для хранения всех сделок
+
+# Проверка наличия ключей
+if not API_KEY or not SECRET_KEY or not PASSPHRASE:
+    raise ValueError("API keys are missing. Please check your .env file.")
+
+# Инициализация асинхронного клиента Bitget
+exchange = ccxt.bitget({
+    'apiKey': API_KEY,
+    'secret': SECRET_KEY,
+    'password': PASSPHRASE,
+    'options': {'defaultType': 'swap'},  # Фьючерсы Bitget
+    'enableRateLimit': True
+})
+
+# --- API Telegram ---
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
+
+# Инициализация репортера сделок
+trade_reporter = TradeReporter(exchange)
+
+leverage = 20
+active_trades = {}
+message_processing_lock = asyncio.Lock()
+
+# Отслеживание недавних сигналов для избежания дубликатов
+recent_signals = {}
+# Время в секундах, в течение которого сигнал считается "недавним"
+SIGNAL_COOLDOWN = 300  # 5 минут
+
+# Список активных стратегий
+active_strategies = {}
+
+# Логирование начала работы бота с детальной информацией
+bot_config = {
+    "timeframe": TIMEFRAME,
+    "trade_direction": TRADE_DIRECTION,
+    "leverage": leverage,
+    "supported_timeframes": ", ".join(SUPPORTED_TIMEFRAMES),
+    "fixed_sl_pct": FIXED_SL_PCT,
+    "trail_trigger_pct": TRAIL_TRIGGER_PCT,
+    "trail_step_pct": TRAIL_STEP_PCT
+}
+bot_logger.log_bot_start(version="1.0.0", config=bot_config)
+
+# Функция инициализации стратегий
+def initialize_strategies():
+    """Инициализирует стратегии для всех монет"""
+    btc_strategy = BTCStrategy(exchange, trade_direction=TRADE_DIRECTION)
+    eth_strategy = ETHStrategy(exchange, trade_direction=TRADE_DIRECTION)
+    
+    # Сохраняем стратегии в словаре для удобного доступа
+    active_strategies["BTC/USDT"] = btc_strategy
+    active_strategies["ETH/USDT"] = eth_strategy
+    
+    logger.info(f"Стратегии инициализированы: {', '.join(active_strategies.keys())}")
+    
+    # Логируем детали каждой стратегии
+    for symbol, strategy in active_strategies.items():
+        logger.info(f"Стратегия {strategy.name} для {symbol}:")
+        logger.info(f"  - Таймфрейм: {strategy.timeframe}")
+        logger.info(f"  - FRAMA длина: {strategy.frama_length}")
+        logger.info(f"  - STC длина: {strategy.stc_length}")
+        logger.info(f"  - VFI длина: {strategy.vfi_length}")
+        logger.info(f"  - Стоп-лосс: {strategy.fixed_sl_pct}%")
+        logger.info(f"  - Трейлинг-триггер: {strategy.trail_trigger_pct}%")
+        logger.info(f"  - Шаг трейлинга: {strategy.trail_step_pct}%")
+    
+    return list(active_strategies.keys())
+
+# Обновляем список популярных монет с активными стратегиями
+POPULAR_COINS = initialize_strategies()
+
+# --- Команда /timeframe ---
+@dp.message(Command("timeframe"))
+async def handle_timeframe(message: Message):
+    """
+    Устанавливает новый таймфрейм для всех торговых стратегий.
+    Формат команды: /timeframe <значение>
+    """
+    global TIMEFRAME
+    
+    # Получаем текст сообщения
+    text = message.text.strip()
+    
+    # Разделяем команду на части (команда и аргумент)
+    args = text.split()
+    
+    # Проверяем корректность команды
+    if len(args) != 2:
+        await message.reply(
+            f"⚠️ Используйте команду в формате: /timeframe <значение>\n"
+            f"Доступные таймфреймы: {', '.join(SUPPORTED_TIMEFRAMES)}"
+        )
+        return
+    
+    # Извлекаем новое значение таймфрейма и форматируем правильно
+    new_timeframe = args[1]
+    
+    # Преобразуем lowercase формат в uppercase для часов/дней/недель/месяцев согласно требованиям Bitget
+    if new_timeframe.endswith('h'):
+        new_timeframe = new_timeframe.replace('h', 'H')
+    if new_timeframe.endswith('d'):
+        new_timeframe = new_timeframe.replace('d', 'D')
+    if new_timeframe.endswith('w'):
+        new_timeframe = new_timeframe.replace('w', 'W')
+    if new_timeframe == '1m' or new_timeframe == '3m' or new_timeframe == '5m' or \
+       new_timeframe == '15m' or new_timeframe == '30m' or new_timeframe == '45m':
+        # Минуты оставляем как есть, в нижнем регистре
+        pass 
+    else:
+        # Проверка на месяц (используем заглавную M)
+        if new_timeframe.lower() == '1m':
+            new_timeframe = '1M'
+        
+    logger.info(f"Запрошенный таймфрейм: {new_timeframe}, будет проверен на поддержку")
+    
+    # Проверяем, поддерживается ли указанный таймфрейм
+    if new_timeframe not in SUPPORTED_TIMEFRAMES:
+        await message.reply(
+            f"⚠️ Указан недопустимый таймфрейм!\n"
+            f"Доступные таймфреймы: {', '.join(SUPPORTED_TIMEFRAMES)}"
+        )
+        return
+    
+    # Меняем значение глобальной переменной
+    old_timeframe = TIMEFRAME
+    TIMEFRAME = new_timeframe
+    
+    # Обновляем таймфрейм для всех стратегий
+    for symbol, strategy in active_strategies.items():
+        strategy.set_timeframe(new_timeframe)
+        logger.info(f"Обновлен таймфрейм для {symbol}: {old_timeframe} -> {new_timeframe}")
+    
+    logger.info(f"Таймфрейм изменен для всех стратегий: {old_timeframe} -> {TIMEFRAME} (пользователь: {message.from_user.id})")
+    
+    # Информируем пользователя об успешном изменении
+    await message.reply(
+        f"✅ Таймфрейм успешно изменен для всех стратегий: {old_timeframe} → {TIMEFRAME}\n"
+        f"Теперь сканирование будет происходить на таймфрейме {TIMEFRAME}"
+    )
+    
+    # Отправляем сообщение в целевой чат
+    if message.chat.id != TARGET_CHAT_ID:
+        await bot.send_message(
+            TARGET_CHAT_ID,
+            f"ℹ️ Таймфрейм изменен на {TIMEFRAME} для всех стратегий"
+        )
+
+# --- Команда /coin_timeframe ---
+@dp.message(Command("coin_timeframe"))
+async def handle_coin_timeframe(message: Message):
+    """
+    Устанавливает новый таймфрейм для указанной монеты.
+    Формат команды: /coin_timeframe <монета> <значение таймфрейма>
+    Пример: /coin_timeframe BTC 15m
+    """
+    # Получаем текст сообщения
+    text = message.text.strip()
+    
+    # Разделяем команду на части
+    args = text.split()
+    
+    # Проверяем корректность команды
+    if len(args) != 3:
+        await message.reply(
+            f"⚠️ Используйте команду в формате: /coin_timeframe <монета> <значение>\n"
+            f"Например: /coin_timeframe BTC 15m\n"
+            f"Доступные монеты: {', '.join([coin.split('/')[0] for coin in active_strategies.keys()])}\n"
+            f"Доступные таймфреймы: {', '.join(SUPPORTED_TIMEFRAMES)}"
+        )
+        return
+    
+    # Извлекаем монету и таймфрейм
+    coin_code = args[1].upper()
+    new_timeframe = args[2]
+    
+    # Формируем полное имя символа
+    full_symbol = f"{coin_code}/USDT"
+    
+    # Проверяем, существует ли стратегия для указанной монеты
+    if full_symbol not in active_strategies:
+        await message.reply(
+            f"⚠️ Для указанной монеты нет стратегии.\n"
+            f"Доступные монеты: {', '.join([coin.split('/')[0] for coin in active_strategies.keys()])}"
+        )
+        return
+    
+    # Форматируем таймфрейм согласно требованиям Bitget
+    if new_timeframe.endswith('h'):
+        new_timeframe = new_timeframe.replace('h', 'H')
+    if new_timeframe.endswith('d'):
+        new_timeframe = new_timeframe.replace('d', 'D')
+    if new_timeframe.endswith('w'):
+        new_timeframe = new_timeframe.replace('w', 'W')
+    if new_timeframe == '1m' or new_timeframe == '3m' or new_timeframe == '5m' or \
+       new_timeframe == '15m' or new_timeframe == '30m' or new_timeframe == '45m':
+        # Минуты оставляем как есть, в нижнем регистре
+        pass 
+    else:
+        # Проверка на месяц (используем заглавную M)
+        if new_timeframe.lower() == '1m':
+            new_timeframe = '1M'
+    
+    # Проверяем, поддерживается ли указанный таймфрейм
+    if new_timeframe not in SUPPORTED_TIMEFRAMES:
+        await message.reply(
+            f"⚠️ Указан недопустимый таймфрейм!\n"
+            f"Доступные таймфреймы: {', '.join(SUPPORTED_TIMEFRAMES)}"
+        )
+        return
+    
+    # Получаем стратегию и текущий таймфрейм
+    strategy = active_strategies[full_symbol]
+    old_timeframe = strategy.timeframe
+    
+    # Устанавливаем новый таймфрейм для стратегии
+    strategy.set_timeframe(new_timeframe)
+    
+    logger.info(f"Таймфрейм изменен для {full_symbol}: {old_timeframe} -> {new_timeframe} (пользователь: {message.from_user.id})")
+    
+    # Информируем пользователя об успешном изменении
+    await message.reply(
+        f"✅ Таймфрейм успешно изменен для {full_symbol}: {old_timeframe} → {new_timeframe}"
+    )
+    
+    # Отправляем сообщение в целевой чат
+    if message.chat.id != TARGET_CHAT_ID:
+        await bot.send_message(
+            TARGET_CHAT_ID,
+            f"ℹ️ Таймфрейм для {full_symbol} изменен на {new_timeframe}"
+        )
+
+# --- Команда /strategy_status ---
+@dp.message(Command("strategy_status"))
+async def handle_strategy_status(message: Message):
+    """
+    Отображает текущий статус всех стратегий и их таймфреймы.
+    """
+    status_message = "📊 *Статус стратегий:*\n\n"
+    
+    for symbol, strategy in active_strategies.items():
+        status_message += f"🔹 *{symbol}*\n"
+        status_message += f"   Таймфрейм: {strategy.timeframe}\n"
+        status_message += f"   Стратегия: {strategy.name}\n"
+        status_message += f"   FRAMA: {strategy.frama_length}, STC: {strategy.stc_length}, VFI: {strategy.vfi_length}\n"
+        status_message += f"   Стоп-лосс: {strategy.fixed_sl_pct}%, Трейлинг: {strategy.trail_trigger_pct}%/{strategy.trail_step_pct}%\n\n"
+    
+    await message.reply(status_message, parse_mode="Markdown")
+
+# Функция для сохранения данных о сделке в историю
+def save_trade_to_history(trade_data):
+    """Сохранение данных о сделке в историю"""
+    global all_trades_history
+    all_trades_history.append(trade_data)
+    logger.info(f"Сделка добавлена в историю: {trade_data}")
+
+async def scan_all_coins():
+    """Сканирование всех монет с активными стратегиями на наличие сигналов (для ручного запуска)"""
+    logger.info("Ручной запуск сканирования всех монет")
+    scan_count = 0
+    signal_count = 0
+
+    for symbol, strategy in active_strategies.items():
+        try:
+            # Проверяем, нет ли активного трейда по этому символу
+            if symbol in active_trades:
+                logger.info(f"Пропуск {symbol} - уже есть активный трейд")
+                continue
+            
+            # Проверяем, не был ли недавно получен и обработан сигнал по этому символу
+            current_time = datetime.now()
+            if symbol in recent_signals:
+                last_signal_time, last_signal_type = recent_signals[symbol]
+                time_diff = (current_time - last_signal_time).total_seconds()
+                
+                if time_diff < SIGNAL_COOLDOWN:
+                    logger.info(f"Пропуск {symbol} - недавно был обработан сигнал ({time_diff:.1f} сек. назад)")
+                    continue
+            
+            logger.info(f"Сканирование {symbol} на таймфрейме {strategy.timeframe}")
+            scan_count += 1
+            
+            # Выполняем анализ с использованием стратегии
+            signal = await strategy.execute()
+            
+            if signal:
+                signal_count += 1
+                
+                # Регистрируем сигнал как обработанный
+                recent_signals[symbol] = (current_time, signal["type"])
+                
+                # Формируем сообщение о сигнале
+                signal_type = "🟢 ЛОНГ" if signal["type"] == "buy" else "🔴 ШОРТ"
+                trail_status = "✅ Активен" if signal.get("trail_mode", True) else "❌ Неактивен"
+                fixed_sl_pct = strategy.fixed_sl_pct
+                trail_trigger_pct = strategy.trail_trigger_pct
+                trail_step_pct = strategy.trail_step_pct
+                
+                message = f"""🚨 СИГНАЛ: {signal_type} на {symbol}!
+💰 Цена: {signal['price']:.4f} USDT
+🛑 Стоп-лосс: {signal['stop_loss']:.4f} USDT ({fixed_sl_pct}%)
+🔄 Трейлинг-стоп: {trail_status}
+📊 Активация трейлинга: {trail_trigger_pct}%
+📊 Шаг трейлинга: {trail_step_pct}%
+⏱ Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+🔍 Таймфрейм: {strategy.timeframe}
+🔍 Стратегия: {strategy.name}
+"""
+                
+                # Отправляем сообщение в Telegram
+                await bot.send_message(TARGET_CHAT_ID, message)
+                
+                # Открываем сделку
+                trade_result = await open_trade(signal)
+                await bot.send_message(TARGET_CHAT_ID, trade_result)
+                
+                # Делаем паузу после открытия сделки и переходим к следующей монете
+                await asyncio.sleep(1)
+                continue
+            else:
+                # Отправляем отчет о завершении сканирования без сигнала
+                current_price = None
+                try:
+                    # Попытка получить текущую цену
+                    ticker = await exchange.fetch_ticker(symbol)
+                    current_price = ticker['last']
+                except Exception as price_error:
+                    logger.error(f"Ошибка при получении текущей цены для {symbol}: {price_error}")
+                
+                # Формируем сообщение о завершении сканирования
+                scan_report = f"✓ {symbol} отсканирован на таймфрейме {strategy.timeframe}"
+                if current_price:
+                    scan_report += f" | Текущая цена: {current_price:.4f} USDT"
+                scan_report += f" | {datetime.now().strftime('%H:%M:%S')}"
+                
+                # Отправляем отчет в Telegram
+                await bot.send_message(TARGET_CHAT_ID, scan_report)
+                
+                # Делаем паузу после отправки сообщений
+                await asyncio.sleep(1)
+    except Exception as e:
+            logger.error(f"Ошибка при сканировании {symbol}: {str(e)}")
+            logger.error(traceback.format_exc())
+        
+        # Небольшая пауза между запросами к API
+        await asyncio.sleep(0.5)
+    
+    # Сообщение и лог о завершении сканирования
+    end_message = f"✅ Сканирование завершено. Проверено монет: {scan_count}, найдено сигналов: {signal_count}. Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    await bot.send_message(TARGET_CHAT_ID, end_message)
+    logger.info(end_message)
+    
+    # Возвращаем результат сканирования
+    return {"scan_count": scan_count, "signal_count": signal_count}
+
+
+async def open_trade(signal):
+    """Открытие сделки на основе сигнала (используя CCXT)"""
+    global active_trades
+    
+    symbol = signal["symbol"]
+    side = signal["type"]  # "buy" или "sell"
+    signal_price = signal["price"]  # Цена из сигнала
+    stop_loss = signal["stop_loss"]
+    take_profit = signal.get("take_profit", None)
+    trail_mode = signal["trail_mode"]
+    positionSide = "long" if side == "buy" else "short"
+    
+    try:
+        # Проверяем, нет ли уже активного трейда по этому символу
+        if symbol in active_trades:
+            return f"⚠️ Уже есть активный трейд по {symbol}"
+            
+        # Получаем текущую рыночную цену
+        try:
+            ticker = await exchange.fetch_ticker(symbol)
+            current_price = ticker['last']
+            logger.info(f"Текущая рыночная цена {symbol}: {current_price}")
+            
+            # Проверяем отклонение цены сигнала от текущей рыночной цены
+            price_deviation_pct = abs((signal_price - current_price) / current_price) * 100
+            logger.info(f"Отклонение цены сигнала от рыночной: {price_deviation_pct:.2f}%")
+            
+            # Используем текущую рыночную цену вместо цены из сигнала
+            price = current_price
+            
+            # Корректируем стоп-лосс и тейк-профит относительно текущей цены
+            if side == "buy":
+                # Для лонга: стоп ниже текущей цены
+                stop_loss = current_price * (1 - FIXED_SL_PCT / 100)
+                if take_profit:
+                    # Тейк-профит выше текущей цены (например, 2% от текущей цены)
+                    take_profit = current_price * (1 + 2 / 100)
+            else:
+                # Для шорта: стоп выше текущей цены
+                stop_loss = current_price * (1 + FIXED_SL_PCT / 100)
+                if take_profit:
+                    # Тейк-профит ниже текущей цены
+                    take_profit = current_price * (1 - 2 / 100)
+                    
+            logger.info(f"Скорректированные значения: цена={price}, стоп-лосс={stop_loss}, тейк-профит={take_profit}")
+                
+        except Exception as ticker_error:
+            logger.error(f"Ошибка при получении текущей цены: {ticker_error}")
+            return f"⚠️ Ошибка при получении текущей цены: {str(ticker_error)}"
+            
+        # Устанавливаем плечо
+        await set_leverage_for_symbol(symbol, leverage)
+            
+        # Получаем баланс фьючерсов
+        usdt_balance = await get_balance()
+        
+        logger.info(f"📈 Баланс фьючерсов USDT: {usdt_balance:.2f}")
+        
+        # Проверка баланса
+        if usdt_balance < 4:  # Минимальный порог
+            return f"⚠️ Ошибка: недостаточно средств на фьючерсах ({usdt_balance:.2f} USDT)"
+            
+        # Расчет объема ордера (15% от баланса с учетом плеча)
+        order_amount = ((usdt_balance / 100) * 15 * leverage) / price
+        
+        # Точность объема для символа
+        try:
+            order_amount = await exchange.amount_to_precision(symbol, order_amount)
+            order_amount = float(order_amount)
+            logger.info(f"Округленный объем ордера: {order_amount}")
+        except Exception as precision_error:
+            logger.warning(f"Ошибка округления объема: {precision_error}, используем исходное значение")
+        
+        # Генерируем уникальный ID для сделки
+        trade_id = str(uuid.uuid4())
+            
+        # Выводим данные перед созданием ордера
+        logger.info(
+            f"🚀 Открытие сделки на ФЬЮЧЕРСАХ: {symbol}, {side.upper()}, {order_amount} по цене {price:.4f}"
+        )
+            
+        # 1. Сначала создаем основной рыночный ордер через CCXT
+        logger.info(f"Создание основного рыночного ордера для {symbol} через CCXT")
+        
+        # Базовые параметры ордера для Bitget через CCXT
+        order_params = {
+            "marginCoin": "USDT",       # Обязательный параметр
+            "marginMode": "isolated",    # Режим маржи
+        }
+        
+        try:
+            # Для рыночного ордера на покупку Bitget требует price или специальный параметр
+            if side == "buy":
+                # Решение 1: Передаем параметр createMarketBuyOrderRequiresPrice=False
+                # и используем amount как сумму в USDT, которую хотим потратить
+                cost_to_spend = order_amount * price
+                logger.info(f"Рыночный ордер на покупку на сумму {cost_to_spend:.2f} USDT")
+                
+                order = await exchange.create_order(
+                    symbol=symbol,
+                    type="market",
+                    side=side,
+                    amount=order_amount,
+                    price=price,  # Решение 2: Указываем текущую цену для правильного расчета
+                    params=order_params
+                )
+            else:
+                # Для продажи ордер создается стандартно
+                order = await exchange.create_order(
+                    symbol=symbol,
+                    type="market",
+                    side=side,
+                    amount=order_amount,
+                    params=order_params
+                )
+            
+            logger.info(f"Основной ордер успешно создан через CCXT: {order}")
+            
+        except Exception as order_error:
+            logger.error(f"Ошибка при создании ордера через CCXT: {order_error}")
+            logger.error(traceback.format_exc())
+            return f"⚠️ Ошибка при создании ордера: {str(order_error)}"
+            
+        # Текущая дата и время
+        open_time = datetime.now()
+        
+        # Сохраняем информацию о трейде
+        trade_info = {
+            'trade_id': trade_id,
+            'order_id': order['id'],
+            'symbol': symbol,
+            'side': side,
+            'amount': order_amount,
+            'entry_price': price,
+            'stop_loss': stop_loss,
+            'take_profit': take_profit,
+            'leverage': leverage,
+            'open_time': open_time,
+            'close_time': None,
+            'exit_price': None,
+            'pnl': None,
+            'status': 'OPEN',
+            'trail_mode': trail_mode,
+            'trailing_stop_created_at': None
+        }
+        
+        # 2. Создаем стоп-лосс через CCXT
+        try:
+            # Противоположная сторона для закрытия позиции
+            close_side = "sell" if side == "buy" else "buy"
+            
+            # Параметры для стоп-лосса
+            stop_params = {
+                "marginCoin": "USDT",
+                "marginMode": "isolated",
+                "stopPrice": stop_loss,
+                "reduceOnly": True,  # Только закрытие позиции
+            }
+            
+            logger.info(f"Создание стоп-лосс ордера для {symbol} на цене {stop_loss}")
+            
+            sl_order = await exchange.create_order(
+                symbol=symbol,
+                type="stop_market",
+                side=close_side,
+                amount=order_amount,
+                params=stop_params
+            )
+            
+            logger.info(f"Стоп-лосс успешно создан: {sl_order}")
+            trade_info['sl_order_id'] = sl_order['id']
+            
+        except Exception as sl_error:
+            logger.error(f"Ошибка при создании стоп-лосса: {sl_error}")
+            logger.error(traceback.format_exc())
+            # Продолжаем выполнение, даже если стоп-лосс не создан
+        
+        # 3. Если включен трейлинг-стоп, создаем его
+        if trail_mode:
+            try:
+                # Рассчитываем процент трейлинга (callback rate)
+                trailing_percent = TRAIL_STEP_PCT  # Шаг трейлинга в процентах
+                
+                # Рассчитываем триггерную цену для активации трейлинга
+                if side == "buy":
+                    trigger_price = price * (1 + TRAIL_TRIGGER_PCT/100)
+                    trigger_price = await exchange.price_to_precision(symbol, trigger_price)
+                else:
+                    trigger_price = price * (1 - TRAIL_TRIGGER_PCT/100)
+                    trigger_price = await exchange.price_to_precision(symbol, trigger_price)
+                
+                trigger_price = float(trigger_price)
+                logger.info(f"Триггерная цена для трейлинга: {trigger_price}")
+                
+                # Параметры для трейлинг-стопа по примеру
+                trail_params = {
+                    "marginCoin": "USDT",
+                    "marginMode": "isolated",
+                    "reduceOnly": True,
+                    "trailingTriggerPrice": trigger_price,
+                    "trailingPercent": trailing_percent
+                }
+                
+                logger.info(f"Создание трейлинг-стоп ордера для {symbol} с триггерной ценой {trigger_price} и процентом {trailing_percent}%")
+                
+                trail_order = await exchange.create_order(
+                    symbol=symbol,
+                    type="trailing_stop_market",
+                    side=close_side,
+                    amount=order_amount,
+                    params=trail_params
+                )
+                
+                logger.info(f"Трейлинг-стоп успешно создан: {trail_order}")
+                trade_info['trail_order_id'] = trail_order['id']
+                trade_info['trailing_stop_created_at'] = datetime.now()
+                
+            except Exception as trail_error:
+                logger.error(f"Ошибка при создании трейлинг-стопа: {trail_error}")
+                logger.error(traceback.format_exc())
+                # Продолжаем выполнение, даже если трейлинг-стоп не создан
+                
+        # 4. Если трейлинг не включен, но задан тейк-профит, создаем его
+        elif take_profit:
+            try:
+                # Параметры для тейк-профита
+                tp_params = {
+                    "marginCoin": "USDT",
+                    "marginMode": "isolated",
+                    "stopPrice": take_profit,
+                    "reduceOnly": True,
+                }
+                
+                logger.info(f"Создание тейк-профит ордера для {symbol} на цене {take_profit}")
+                
+                tp_order = await exchange.create_order(
+                    symbol=symbol,
+                    type="take_profit_market",
+                    side=close_side,
+                    amount=order_amount,
+                    params=tp_params
+                )
+                
+                logger.info(f"Тейк-профит успешно создан: {tp_order}")
+                trade_info['tp_order_id'] = tp_order['id']
+                
+            except Exception as tp_error:
+                logger.error(f"Ошибка при создании тейк-профита: {tp_error}")
+                logger.error(traceback.format_exc())
+                # Продолжаем выполнение, даже если тейк-профит не создан
+        
+        # Добавляем информацию о сделке в активные трейды
+        active_trades[symbol] = trade_info
+        
+        # Формируем сообщение об открытии сделки
+        trade_message = f"""✅ Открыта новая сделка:
+🔹 Символ: {symbol}
+🔹 Тип: {'ЛОНГ' if side == 'buy' else 'ШОРТ'}
+🔹 Цена входа: {price:.4f} USDT
+🔹 Объем: {order_amount}
+🔹 Стоп-лосс: {stop_loss:.4f} USDT"""
+
+        # Добавляем информацию о созданных стоп-ордерах 
+        if 'sl_order_id' in trade_info:
+            trade_message += f"\n🔸 ID стоп-лосса: {trade_info['sl_order_id']}"
+            
+        if 'trail_order_id' in trade_info:
+            trade_message += f"\n🔄 Трейлинг-стоп: Включен (ID: {trade_info['trail_order_id']})"
+            trade_message += f"\n🔄 Триггер: {TRAIL_TRIGGER_PCT}%, Шаг: {TRAIL_STEP_PCT}%"
+        elif 'tp_order_id' in trade_info:
+            trade_message += f"\n📈 Тейк-профит: {take_profit:.4f} USDT (ID: {trade_info['tp_order_id']})"
+        
+        trade_message += f"""
+🔹 Плечо: {leverage}x
+⏱ {open_time.strftime('%Y-%m-%d %H:%M:%S')}"""
+            
+        return trade_message
+        
+    except Exception as e:
+        logger.error(f"Ошибка при открытии сделки: {str(e)}")
+        logger.error(traceback.format_exc())
+        # В случае ошибки удаляем трейд из активных
+        if symbol in active_trades:
+            del active_trades[symbol]
+        return f"⚠️ Ошибка при открытии сделки: {str(e)}"
+
+async def set_leverage_for_symbol(symbol, leverage):
+    """
+    Устанавливает плечо для указанного символа.
+    """
+    try:
+        response = await exchange.set_leverage(leverage, symbol, params={"marginCoin": "USDT"})
+        logger.info(f"Плечо установлено на {leverage}: {response}")
+    except Exception as e:
+        logger.error(f"Ошибка при установке плеча: {str(e)}")
+        raise
+
+async def get_balance():
+    """Получаем баланс USDT"""
+    try:
+        # Устанавливаем таймаут для операции получения баланса
+        # чтобы она не блокировала обработку команд слишком долго
+        async with asyncio.timeout(10):  # 10 секунд максимум
+            balance = await exchange.fetch_balance({'type': 'swap', 'marginCoin': 'USDT'})
+            return balance['total'].get('USDT', 0)
+    except asyncio.TimeoutError:
+        logger.error("Таймаут при получении баланса")
+        return 0
+    except Exception as e:
+        logger.error(f"Ошибка при получении баланса: {e}")
+        logger.error(traceback.format_exc())
+        return 0
+
+async def periodic_scan():
+    """Периодическое сканирование монет согласно их индивидуальным таймфреймам"""
+    logger.info("Запущена задача периодического сканирования")
+    
+    while True:
+        try:
+            # Получаем текущее время
+            now = datetime.now()
+            
+            # Логируем состояние только раз в минуту (когда seconds == 0)
+            if now.second == 0:
+                active_strategies_status = ", ".join([f"{symbol}({strategy.timeframe})" for symbol, strategy in active_strategies.items()])
+                logger.info(f"Активные стратегии: {active_strategies_status}")
+                
+                # Логируем время следующего сканирования для каждой стратегии
+                for symbol, strategy in active_strategies.items():
+                    next_scan = strategy.next_scan_time
+                    if next_scan:
+                        wait_seconds = (next_scan - now).total_seconds()
+                        logger.info(f"Следующее сканирование {symbol}: {next_scan.strftime('%H:%M:%S')}, через {wait_seconds:.1f} сек")
+            
+            # Для каждой стратегии проверяем, нужно ли выполнить сканирование
+            for symbol, strategy in active_strategies.items():
+                # Если время следующего сканирования не установлено, устанавливаем его
+                if strategy.next_scan_time is None:
+                    strategy.next_scan_time = calculate_next_candle_time(now, strategy.timeframe)
+                    logger.info(f"Установлено время следующего сканирования для {symbol} ({strategy.timeframe}): "
+                               f"{strategy.next_scan_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                    continue
+                
+                # Проверяем, наступило ли время сканирования
+                wait_seconds = (strategy.next_scan_time - now).total_seconds()
+                
+                # Если начало свечи через менее чем 5 секунд или уже прошло не более 5 секунд назад, запускаем сканирование
+                if -5 <= wait_seconds <= 5:
+                    logger.info(f"Начало новой свечи для {symbol} ({strategy.timeframe}): "
+                               f"{strategy.next_scan_time.strftime('%Y-%m-%d %H:%M:%S')}. Запуск сканирования...")
+                    
+                    try:
+                        # Проверяем, нет ли активного трейда по этому символу
+                        if symbol in active_trades:
+                            logger.info(f"Пропускаем сканирование {symbol}, так как уже есть активный трейд")
+                            # Устанавливаем время следующего сканирования, даже если пропускаем
+                            strategy.next_scan_time = calculate_next_candle_time(now, strategy.timeframe)
+                            continue
+                
+                        # Проверяем, не был ли недавно получен и обработан сигнал по этому символу
+                        if symbol in recent_signals:
+                            last_signal_time, last_signal_type = recent_signals[symbol]
+                            time_diff = (now - last_signal_time).total_seconds()
+                            
+                            if time_diff < SIGNAL_COOLDOWN:
+                                logger.info(f"Пропускаем сканирование {symbol} - недавно был обработан сигнал ({time_diff:.1f} сек. назад)")
+                                strategy.next_scan_time = calculate_next_candle_time(now, strategy.timeframe)
+                                continue
+                                
+                        # Выполняем анализ с использованием стратегии
+                        signal = await strategy.execute()
+            
+                        if signal:
+                            # Регистрируем сигнал как обработанный
+                            recent_signals[symbol] = (now, signal["type"])
+                            
+                            # Формируем сообщение о сигнале
+                            signal_type = "🟢 ЛОНГ" if signal["type"] == "buy" else "🔴 ШОРТ"
+                            trail_status = "✅ Активен" if signal.get("trail_mode", True) else "❌ Неактивен"
+                            fixed_sl_pct = strategy.fixed_sl_pct
+                            trail_trigger_pct = strategy.trail_trigger_pct
+                            trail_step_pct = strategy.trail_step_pct
+                            
+                            message = f"""🚨 СИГНАЛ: {signal_type} на {symbol}!
+💰 Цена: {signal['price']:.4f} USDT
+🛑 Стоп-лосс: {signal['stop_loss']:.4f} USDT ({fixed_sl_pct}%)
+🔄 Трейлинг-стоп: {trail_status}
+📊 Активация трейлинга: {trail_trigger_pct}%
+📊 Шаг трейлинга: {trail_step_pct}%
+⏱ Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+🔍 Таймфрейм: {strategy.timeframe}
+🔍 Стратегия: {strategy.name}
+"""
+                
+                            # Отправляем сообщение в Telegram
+                            await bot.send_message(TARGET_CHAT_ID, message)
+                            
+                            # Открываем сделку
+                            trade_result = await open_trade(signal)
+                            await bot.send_message(TARGET_CHAT_ID, trade_result)
+                        else:
+                            # Отправляем отчет о завершении сканирования без сигнала
+                            current_price = None
+                            try:
+                                # Попытка получить текущую цену
+                                ticker = await exchange.fetch_ticker(symbol)
+                                current_price = ticker['last']
+                            except Exception as price_error:
+                                logger.error(f"Ошибка при получении текущей цены для {symbol}: {price_error}")
+                            
+                            # Формируем сообщение о завершении сканирования
+                            scan_report = f"✓ {symbol} отсканирован на таймфрейме {strategy.timeframe}"
+                            if current_price:
+                                scan_report += f" | Текущая цена: {current_price:.4f} USDT"
+                            scan_report += f" | {datetime.now().strftime('%H:%M:%S')}"
+                            
+                            # Отправляем отчет в Telegram
+                            await bot.send_message(TARGET_CHAT_ID, scan_report)
+                        
+                        # Делаем паузу после отправки сообщений
+                        await asyncio.sleep(1)
+                        
+                    except Exception as e:
+                        logger.error(f"Ошибка при сканировании {symbol}: {str(e)}")
+                        logger.error(traceback.format_exc())
+                    finally:
+                        # Устанавливаем время следующего сканирования в любом случае
+                        new_next_scan = calculate_next_candle_time(now, strategy.timeframe)
+                        logger.info(f"Установлено время следующего сканирования для {symbol} ({strategy.timeframe}): "
+                                  f"{new_next_scan.strftime('%Y-%m-%d %H:%M:%S')}")
+                        strategy.next_scan_time = new_next_scan
+                
+                elif wait_seconds < -10:
+                    # Если мы сильно пропустили начало свечи, корректируем время до следующей
+                    logger.warning(f"Пропущено начало свечи для {symbol} ({strategy.timeframe}) в "
+                                  f"{strategy.next_scan_time.strftime('%Y-%m-%d %H:%M:%S')}. Перерасчет...")
+                    strategy.next_scan_time = calculate_next_candle_time(now, strategy.timeframe)
+            
+            # Пауза между итерациями проверки (короче для более точного срабатывания)
+            await asyncio.sleep(0.5)
+
+        except Exception as e:
+            logger.error(f"Ошибка в периодическом сканировании: {e}")
+            logger.error(traceback.format_exc())
+            await asyncio.sleep(60)  # Если ошибка, ждем минуту перед повторной попыткой
+
+def calculate_next_candle_time(now, timeframe):
+    """
+    Вычисляет время начала следующей свечи для указанного таймфрейма.
+    
+    Args:
+        now: Текущее время
+        timeframe: Таймфрейм для расчета
+    
+    Returns:
+        datetime: Время начала следующей свечи
+    """
+    next_candle_time = None
+    
+    # Разбираем таймфрейм на число и единицу измерения
+    if timeframe == '45m':  # Специальная логика для 45-минутного таймфрейма
+        # 45-минутный таймфрейм имеет специфический паттерн: 00:00, 00:45, 01:30, 02:15, 03:00...
+        hour = now.hour
+        minute = now.minute
+        
+        # Определяем позицию в цикле (цикл из 3 часов или 4 свечей)
+        hour_mod = hour % 3
+        
+        # Определяем, какая будет следующая минута начала свечи
+        if hour_mod == 0:  # Часы, кратные 3 (0, 3, 6, 9, 12, 15, 18, 21)
+            if minute < 45:
+                next_minute = 45
+                next_hour = hour
+            else:
+                next_minute = 30
+                next_hour = hour + 1
+        elif hour_mod == 1:  # Часы вида 1, 4, 7, 10, 13, 16, 19, 22
+            if minute < 30:
+                next_minute = 30
+                next_hour = hour
+            else:
+                next_minute = 15
+                next_hour = hour + 1
+        else:  # hour_mod == 2, часы вида 2, 5, 8, 11, 14, 17, 20, 23
+            if minute < 15:
+                next_minute = 15
+                next_hour = hour
+            else:
+                next_minute = 0
+                next_hour = hour + 1
+        
+        next_candle_time = now.replace(hour=next_hour, minute=next_minute, second=0, microsecond=0)
+        
+    elif timeframe.endswith('m') and timeframe != '45m':  # Обычные минутные таймфреймы
+        minutes_value = int(timeframe.replace('m', ''))
+        
+        # Вычисляем, сколько минут прошло с начала часа
+        minutes_past_hour = now.minute
+        
+        # Определяем ближайшее время начала свечи
+        # Для минутных таймфреймов это должно быть кратно значению таймфрейма от начала часа
+        # Например, для 5m это 00, 05, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+        next_minute_mark = ((minutes_past_hour // minutes_value) + 1) * minutes_value
+        
+        # Если следующая отметка больше 59, переходим к следующему часу
+        if next_minute_mark >= 60:
+            next_hour = now.hour + 1
+            next_minute_mark = next_minute_mark - 60
+            next_candle_time = now.replace(hour=next_hour, minute=next_minute_mark, second=0, microsecond=0)
+        else:
+            next_candle_time = now.replace(minute=next_minute_mark, second=0, microsecond=0)
+    
+    # Остальной код для других таймфреймов остается без изменений
+    elif timeframe.startswith('1H'):  # 1 час
+        # Следующая свеча начинается в начале следующего часа
+        next_candle_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        
+    elif timeframe.startswith('4H'):  # 4 часа
+        # Свечи 4H начинаются в 00:00, 04:00, 08:00, 12:00, 16:00, 20:00
+        hours_past_day = now.hour
+        next_hour_mark = ((hours_past_day // 4) + 1) * 4
+        if next_hour_mark >= 24:
+            next_day = now + timedelta(days=1)
+            next_hour_mark = next_hour_mark - 24
+            next_candle_time = next_day.replace(hour=next_hour_mark, minute=0, second=0, microsecond=0)
+        else:
+            next_candle_time = now.replace(hour=next_hour_mark, minute=0, second=0, microsecond=0)
+            
+    elif timeframe.startswith('6H'):  # 6 часов
+        # Свечи 6H начинаются в 00:00, 06:00, 12:00, 18:00
+        hours_past_day = now.hour
+        next_hour_mark = ((hours_past_day // 6) + 1) * 6
+        if next_hour_mark >= 24:
+            next_day = now + timedelta(days=1)
+            next_hour_mark = next_hour_mark - 24
+            next_candle_time = next_day.replace(hour=next_hour_mark, minute=0, second=0, microsecond=0)
+        else:
+            next_candle_time = now.replace(hour=next_hour_mark, minute=0, second=0, microsecond=0)
+            
+    elif timeframe.startswith('12H'):  # 12 часов
+        # Свечи 12H начинаются в 00:00 и 12:00
+        if now.hour < 12:
+            next_candle_time = now.replace(hour=12, minute=0, second=0, microsecond=0)
+        else:
+            next_day = now + timedelta(days=1)
+            next_candle_time = next_day.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+    elif timeframe.startswith('1D'):  # 1 день
+        # Свечи 1D начинаются в 00:00 каждого дня
+        next_day = now + timedelta(days=1)
+        next_candle_time = next_day.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+    elif timeframe.startswith('1W'):  # 1 неделя
+        # Свечи 1W обычно начинаются в понедельник, 00:00
+        days_to_monday = (7 - now.weekday()) % 7
+        if days_to_monday == 0 and (now.hour > 0 or now.minute > 0 or now.second > 0):
+            days_to_monday = 7  # Если сейчас понедельник, но не точно 00:00, то следующий понедельник
+        next_monday = now + timedelta(days=days_to_monday)
+        next_candle_time = next_monday.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+    elif timeframe.startswith('1M'):  # 1 месяц
+        # Свечи 1M начинаются в 1-й день каждого месяца
+        if now.day == 1 and now.hour == 0 and now.minute == 0 and now.second == 0:
+            # Если сейчас ровно начало месяца, следующее начало через месяц
+            next_month = now.month + 1
+            next_year = now.year
+            if next_month > 12:
+                next_month = 1
+                next_year += 1
+            next_candle_time = now.replace(year=next_year, month=next_month, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            # Иначе, следующее начало - 1-й день следующего месяца
+            next_month = now.month + 1
+            next_year = now.year
+            if next_month > 12:
+                next_month = 1
+                next_year += 1
+            next_candle_time = datetime(year=next_year, month=next_month, day=1, hour=0, minute=0, second=0)
+    
+    else:
+        # Для неизвестных таймфреймов используем дефолтное значение - 15 минут
+        logger.warning(f"Неизвестный формат таймфрейма: {timeframe}. Используем 15-минутные интервалы.")
+        minutes_past_hour = now.minute
+        if minutes_past_hour < 15:
+            next_minute_mark = 15
+        elif minutes_past_hour < 30:
+            next_minute_mark = 30
+        elif minutes_past_hour < 45:
+            next_minute_mark = 45
+        else:
+            next_minute_mark = 0
+            next_candle_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        
+        if next_minute_mark > 0:
+            next_candle_time = now.replace(minute=next_minute_mark, second=0, microsecond=0)
+    
+    # Если время следующей свечи не определено, используем +15 минут от текущего времени
+    if next_candle_time is None:
+        logger.error(f"Не удалось определить время следующей свечи для таймфрейма {timeframe}")
+        next_candle_time = now + timedelta(minutes=15)
+        
+    return next_candle_time
+
+@dp.message(Command("start"))
+async def handle_start(message: types.Message):
+    welcome_text = """
+🚀 Привет! Я — торговый бот для работы с биржей Bitget!
+
+Команды:
+- 💰 Показать текущий баланс (/balance)
+- 🛑 Останавить все активные сделки и 
+     отменить лимитные заявки (/stop)
+- 🔥 Поменять плечо (/leverage <число>)
+- ⏱ Изменить таймфрейм для всех стратегий (/timeframe <значение>)
+- ⏱ Изменить таймфрейм для отдельной монеты (/coin_timeframe <монета> <значение>)
+- 📊 Посмотреть статус всех стратегий (/strategy_status)
+- ✅ Посмотреть открытые позиции и 
+     лимитные заявки (/orders)
+- 📊 Показать отчет по всем сделкам (/all_trades)
+- 🆔 Узнать ID чата (/get_id)
+- 🔄 Установить этот чат как целевой (/set_chat)
+"""
+
+    await message.answer(welcome_text)
+
+async def check_utc_timeframe_alignment():
+    """
+    Проверяет каждую минуту, делится ли текущее время UTC на выбранный таймфрейм.
+    Это помогает синхронизироваться с биржей, которая обычно использует UTC.
+    """
+    while True:
+        try:
+            # Получаем текущее время по UTC (исправлено с использованием timezone)
+            now_utc = datetime.now(timezone.utc)
+            
+            # Проверяем соответствие времени таймфрейму
+            is_aligned = False
+            alignment_msg = ""
+            
+            if TIMEFRAME == '45m':  # Специальная проверка для 45-минутного таймфрейма
+                hour = now_utc.hour
+                minute = now_utc.minute
+                
+                # Паттерн 45-минутного таймфрейма: 00:00, 00:45, 01:30, 02:15, 03:00...
+                hour_mod = hour % 3
+                
+                # Проверяем, находимся ли мы в точке начала свечи
+                if hour_mod == 0 and (minute == 0 or minute == 45):
+                    is_aligned = True
+                elif hour_mod == 1 and minute == 30:
+                    is_aligned = True
+                elif hour_mod == 2 and minute == 15:
+                    is_aligned = True
+                
+                alignment_msg = f"Шаблон 45m: час {hour} (mod 3 = {hour_mod}), минута {minute}"
+                
+            elif TIMEFRAME.endswith('m') and TIMEFRAME != '45m':  # Минутные таймфреймы
+                minutes_value = int(TIMEFRAME.replace('m', ''))
+                is_aligned = now_utc.minute % minutes_value == 0
+                alignment_msg = f"Текущая минута UTC: {now_utc.minute}, нужна кратность {minutes_value}"
+                
+            elif TIMEFRAME.startswith('1H'):  # 1 час
+                is_aligned = now_utc.minute == 0
+                alignment_msg = f"Текущая минута UTC: {now_utc.minute}, должна быть 0"
+                
+            elif TIMEFRAME.startswith('4H'):  # 4 часа
+                is_aligned = now_utc.hour % 4 == 0 and now_utc.minute == 0
+                alignment_msg = f"Текущий час UTC: {now_utc.hour}, нужна кратность 4 и минута 0"
+                
+            elif TIMEFRAME.startswith('6H'):  # 6 часов
+                is_aligned = now_utc.hour % 6 == 0 and now_utc.minute == 0
+                alignment_msg = f"Текущий час UTC: {now_utc.hour}, нужна кратность 6 и минута 0"
+                
+            elif TIMEFRAME.startswith('12H'):  # 12 часов
+                is_aligned = now_utc.hour % 12 == 0 and now_utc.minute == 0
+                alignment_msg = f"Текущий час UTC: {now_utc.hour}, нужна кратность 12 и минута 0"
+                
+            elif TIMEFRAME.startswith('1D'):  # 1 день
+                is_aligned = now_utc.hour == 0 and now_utc.minute == 0
+                alignment_msg = f"Текущий час/минута UTC: {now_utc.hour}:{now_utc.minute}, должны быть 0:0"
+            
+            # Логируем результат проверки
+            if is_aligned:
+                logger.info(f"⏰ Время UTC {now_utc.strftime('%Y-%m-%d %H:%M:%S')} соответствует началу свечи {TIMEFRAME}")
+        else:
+                logger.debug(f"Время UTC {now_utc.strftime('%Y-%m-%d %H:%M:%S')} не соответствует началу свечи {TIMEFRAME}. {alignment_msg}")
+
+            # Ждем до начала следующей минуты (60 - секунды текущей минуты)
+            seconds_to_next_minute = 60 - now_utc.second
+            await asyncio.sleep(seconds_to_next_minute)
+
+    except Exception as e:
+            logger.error(f"Ошибка при проверке соответствия времени UTC таймфрейму: {e}")
+            logger.error(traceback.format_exc())
+            await asyncio.sleep(60)  # Если ошибка, ждем минуту перед повторной попыткой
+
+# Добавим команду для ручного запуска сканирования
+@dp.message(Command("scan"))
+async def handle_scan(message: Message):
+    """
+    Запускает ручное сканирование всех монет.
+    """
+    try:
+        await message.reply("🔍 Запуск сканирования всех монет...")
+        await scan_all_coins()
+    except Exception as e:
+        logger.error(f"Ошибка при выполнении команды /scan: {str(e)}")
+        logger.error(traceback.format_exc())
+        await message.reply(f"⚠️ Ошибка при выполнении сканирования: {str(e)}")
+
+# --- Добавленные команды ---
+
+@dp.message(Command("balance"))
+async def handle_balance(message: Message):
+    """
+    Показывает текущий баланс пользователя.
+    """
+    # Отправляем сообщение о начале обработки
+    processing_msg = await message.reply("⏳ Получение баланса...")
+    
+    # Создаем задачу для получения баланса
+    async def fetch_balance_task():
+        try:
+            balance = await get_balance()
+            # Обновляем сообщение с результатом
+            await processing_msg.edit_text(f"💰 Ваш текущий баланс: {balance:.2f} USDT")
+                except Exception as e:
+            logger.error(f"Ошибка при выполнении команды /balance: {str(e)}")
+            logger.error(traceback.format_exc())
+            await processing_msg.edit_text(f"⚠️ Ошибка при получении баланса: {str(e)}")
+    
+    # Запускаем задачу в фоне и не ждем ее завершения
+    asyncio.create_task(fetch_balance_task())
+
+@dp.message(Command("stop"))
+async def handle_stop(message: Message):
+    """
+    Останавливает все активные сделки и отменяет лимитные заявки.
+    """
+    # Отправляем сообщение о начале обработки
+    processing_msg = await message.reply("⏳ Остановка всех активных сделок...")
+    
+    # Создаем задачу для остановки сделок
+    async def stop_trades_task():
+        try:
+            if not active_trades:
+                await processing_msg.edit_text("ℹ️ Нет активных сделок для остановки.")
+                return
+                
+            # Сохраняем список активных сделок для отчета
+            active_symbols = list(active_trades.keys())
+            
+            # Отменяем все открытые ордера и закрываем позиции
+            success_count = 0
+            error_count = 0
+            
+            for symbol in active_symbols:
+                try:
+                    # Закрываем позицию по текущей рыночной цене
+                    trade_info = active_trades[symbol]
+                    side = "sell" if trade_info['side'] == "buy" else "buy"  # Противоположная сторона для закрытия
+                    position_side = "long" if trade_info['side'] == "buy" else "short"
+                    
+                    # Закрываем по рыночной цене с reduceOnly=True
+                    await exchange.create_order(
+                        symbol=symbol,
+                        type="market",
+                        side=side,
+                        amount=trade_info['amount'],
+                        params={
+                            "marginCoin": "USDT",            # ✅ обязательный
+                            "marginMode": "isolated",        # ✅ обязательный
+                            "reduceOnly": True,              # ✅ важно для закрытия
+                            "positionSide": position_side,   # ✅ для одностороннего режима
+                            "loanType": "normal"             # ✅ обязательный для Bitget
+                        }
+                    )
+                    
+                    logger.info(f"Позиция по {symbol} закрыта по рыночной цене")
+                            
+                            # Удаляем из активных сделок
+                            del active_trades[symbol]
+                    success_count += 1
+                    
+                    # Обновляем сообщение о ходе выполнения
+                    await processing_msg.edit_text(
+                        f"⏳ Закрытие позиций... {success_count}/{len(active_symbols)} завершено"
+                    )
+                    
+                    except Exception as e:
+                        logger.error(f"Ошибка при закрытии позиции {symbol}: {str(e)}")
+                    error_count += 1
+                    
+            final_message = f"✅ Все активные сделки остановлены.\n"
+            final_message += f"Успешно закрыто: {success_count}\n"
+            if error_count > 0:
+                final_message += f"Ошибок: {error_count}"
+                
+            await processing_msg.edit_text(final_message)
+            
+            # Отправляем сообщение в целевой чат
+            if message.chat.id != TARGET_CHAT_ID:
+                await bot.send_message(
+                    TARGET_CHAT_ID,
+                    f"ℹ️ Все активные сделки были остановлены командой пользователя"
+                )
+        except Exception as e:
+            logger.error(f"Ошибка при выполнении команды /stop: {str(e)}")
+            logger.error(traceback.format_exc())
+            await processing_msg.edit_text(f"⚠️ Ошибка при остановке сделок: {str(e)}")
+    
+    # Запускаем задачу в фоне и не ждем ее завершения
+    asyncio.create_task(stop_trades_task())
+
+@dp.message(Command("leverage"))
+async def handle_leverage(message: Message):
+    """
+    Изменяет размер плеча для всех стратегий.
+    Формат команды: /leverage <число>
+    """
+    # Получаем текст сообщения
+    text = message.text.strip()
+    
+    # Разделяем команду на части
+    args = text.split()
+    
+    # Проверяем корректность команды
+    if len(args) != 2:
+        await message.reply("⚠️ Используйте команду в формате: /leverage <число>")
+        return
+    
+    # Извлекаем новое значение плеча
+    try:
+        new_leverage = int(args[1])
+    except ValueError:
+        await message.reply("⚠️ Плечо должно быть целым числом.")
+        return
+    
+    # Проверяем допустимые значения плеча
+    if new_leverage < 1 or new_leverage > 100:
+        await message.reply("⚠️ Плечо должно быть от 1 до 100.")
+        return
+    
+    # Отправляем сообщение о начале обработки
+    processing_msg = await message.reply(f"⏳ Изменение плеча на {new_leverage}x...")
+    
+    # Создаем задачу для изменения плеча
+    async def change_leverage_task():
+        global leverage
+        try:
+            # Сохраняем старое значение для логирования
+            old_leverage = leverage
+            leverage = new_leverage
+            
+            # Устанавливаем плечо для каждой монеты
+            symbols = list(active_strategies.keys())
+            success_count = 0
+            error_count = 0
+            logger.info(f"Плечо изменено: {old_leverage}x -> {leverage}x (пользователь: {message.from_user.id})")
+            
+            # Формируем итоговое сообщение
+            final_message = f"✅ Плечо успешно изменено: {old_leverage}x → {leverage}x\n"
+                
+            # Информируем пользователя об успешном изменении
+            await processing_msg.edit_text(final_message)
+            
+            # Отправляем сообщение в целевой чат
+            if message.chat.id != TARGET_CHAT_ID:
+                await bot.send_message(
+                    TARGET_CHAT_ID,
+                    f"ℹ️ Плечо изменено на {leverage}x для всех монет"
+                )
+        except Exception as e:
+            logger.error(f"Ошибка при выполнении команды /leverage: {str(e)}")
+            logger.error(traceback.format_exc())
+            await processing_msg.edit_text(f"⚠️ Ошибка при изменении плеча: {str(e)}")
+    
+    # Запускаем задачу в фоне и не ждем ее завершения
+    asyncio.create_task(change_leverage_task())
+
+@dp.message(Command("orders"))
+async def handle_orders(message: Message):
+    """
+    Показывает информацию о текущих открытых позициях и лимитных заявках.
+    """
+    # Отправляем сообщение о начале обработки
+    processing_msg = await message.reply("⏳ Получение информации о позициях и ордерах...")
+    
+    # Создаем задачу для получения информации
+    async def fetch_orders_task():
+        try:
+            # Получаем информацию о позициях с биржи
+            positions = await exchange.fetch_positions(params={"marginCoin": "USDT"})
+            active_positions = [p for p in positions if float(p['contracts']) > 0]
+            
+            # Получаем информацию о открытых ордерах
+            orders = await exchange.fetch_open_orders(params={"marginCoin": "USDT"})
+            
+            # Формируем сообщение о позициях
+            if active_positions:
+                positions_message = "📊 *Открытые позиции:*\n\n"
+                for pos in active_positions:
+                    symbol = pos['symbol']
+                    side = "ЛОНГ" if pos['side'] == 'long' else "ШОРТ"
+                    size = float(pos['contracts'])
+                    entry_price = float(pos['entryPrice'])
+                    leverage = pos['leverage']
+                    unrealized_pnl = float(pos['unrealizedPnl'])
+                    pnl_percent = (unrealized_pnl / (size * entry_price / float(leverage))) * 100
+                    
+                    positions_message += f"🔹 *{symbol}*\n"
+                    positions_message += f"   Тип: {side}\n"
+                    positions_message += f"   Размер: {size:.6f}\n"
+                    positions_message += f"   Цена входа: {entry_price:.4f}\n"
+                    positions_message += f"   Плечо: {leverage}x\n"
+                    positions_message += f"   PnL: {unrealized_pnl:.2f} USDT ({pnl_percent:.2f}%)\n\n"
+            else:
+                positions_message = "📊 *Открытые позиции:* нет\n\n"
+            
+            # Формируем сообщение о ордерах
+            if orders:
+                orders_message = "📋 *Открытые ордера:*\n\n"
+                for order in orders:
+                    symbol = order['symbol']
+                    order_type = order['type'].upper()
+                    side = "ПОКУПКА" if order['side'] == 'buy' else "ПРОДАЖА"
+                    price = order['price'] if order['price'] else "Рыночная"
+                    amount = order['amount']
+                    
+                    orders_message += f"🔸 *{symbol}*\n"
+                    orders_message += f"   Тип: {order_type}\n"
+                    orders_message += f"   Сторона: {side}\n"
+                    orders_message += f"   Цена: {price}\n"
+                    orders_message += f"   Количество: {amount:.6f}\n\n"
+            else:
+                orders_message = "📋 *Открытые ордера:* нет"
+            
+            # Отправляем полное сообщение
+            await processing_msg.edit_text(positions_message + orders_message, parse_mode="Markdown")
+        except Exception as e:
+            logger.error(f"Ошибка при выполнении команды /orders: {str(e)}")
+            logger.error(traceback.format_exc())
+            await processing_msg.edit_text(f"⚠️ Ошибка при получении информации о ордерах: {str(e)}")
+    
+    # Запускаем задачу в фоне и не ждем ее завершения
+    asyncio.create_task(fetch_orders_task())
+
+@dp.message(Command("all_trades"))
+async def handle_all_trades(message: Message):
+    """
+    Показывает отчет по всем сделкам.
+    """
+    # Отправляем сообщение о начале обработки
+    processing_msg = await message.reply("⏳ Генерация отчета по всем сделкам...")
+    
+    # Создаем задачу для генерации отчета
+    async def generate_report_task():
+        try:
+            # Генерируем отчет по сделкам
+            report_file = await trade_reporter.generate_trade_report()
+            
+            if report_file and os.path.exists(report_file):
+                # Отправляем файл отчета
+                doc = FSInputFile(report_file)
+                # Удаляем предыдущее сообщение и отправляем новое с файлом
+                await processing_msg.delete()
+                await message.reply_document(
+                    document=doc,
+                    caption="📊 Отчет по всем сделкам."
+                )
+            else:
+                await processing_msg.edit_text("ℹ️ Нет данных о сделках для формирования отчета.")
+        except Exception as e:
+            logger.error(f"Ошибка при выполнении команды /all_trades: {str(e)}")
+            logger.error(traceback.format_exc())
+            await processing_msg.edit_text(f"⚠️ Ошибка при формировании отчета по сделкам: {str(e)}")
+    
+    # Запускаем задачу в фоне и не ждем ее завершения
+    asyncio.create_task(generate_report_task())
+
+@dp.message(Command("get_id"))
+async def handle_get_id(message: Message):
+    """
+    Отправляет ID текущего чата.
+    """
+    try:
+        chat_id = message.chat.id
+        await message.reply(f"🆔 ID текущего чата: `{chat_id}`", parse_mode="Markdown")
+        logger.info(f"ID чата запрошен пользователем {message.from_user.id}: {chat_id}")
+    except Exception as e:
+        logger.error(f"Ошибка при выполнении команды /get_id: {str(e)}")
+        await message.reply(f"⚠️ Ошибка при получении ID чата: {str(e)}")
+
+@dp.message(Command("set_chat"))
+async def handle_set_chat(message: Message):
+    """
+    Устанавливает текущий чат как целевой для уведомлений.
+    """
+    try:
+        global TARGET_CHAT_ID
+        
+        # Сохраняем текущий ID для лога
+        old_chat_id = TARGET_CHAT_ID
+        
+        # Устанавливаем новый ID
+        TARGET_CHAT_ID = message.chat.id
+        
+        logger.info(f"Целевой чат изменен: {old_chat_id} -> {TARGET_CHAT_ID} (пользователь: {message.from_user.id})")
+        
+        # Информируем пользователя
+        await message.reply(
+            f"✅ Текущий чат установлен как целевой для уведомлений.\n"
+            f"ID чата: `{TARGET_CHAT_ID}`", 
+            parse_mode="Markdown"
+        )
+        
+        # Отправляем тестовое сообщение
+        await bot.send_message(
+            TARGET_CHAT_ID,
+            f"ℹ️ Этот чат установлен как получатель уведомлений бота."
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при выполнении команды /set_chat: {str(e)}")
+        logger.error(traceback.format_exc())
+        await message.reply(f"⚠️ Ошибка при установке целевого чата: {str(e)}")
+
+async def clean_expired_signals():
+    """Очищает устаревшие сигналы из словаря recent_signals"""
+    global recent_signals
+    
+    while True:
+        try:
+            current_time = datetime.now()
+            symbols_to_remove = []
+            
+            # Ищем устаревшие сигналы
+            for symbol, (signal_time, signal_type) in recent_signals.items():
+                time_diff = (current_time - signal_time).total_seconds()
+                if time_diff > SIGNAL_COOLDOWN:
+                    symbols_to_remove.append(symbol)
+            
+            # Удаляем найденные устаревшие сигналы
+            for symbol in symbols_to_remove:
+                del recent_signals[symbol]
+                logger.info(f"Удален устаревший сигнал для {symbol}")
+            
+            # Ждем 60 секунд до следующей проверки
+            await asyncio.sleep(60)
+    
+    except Exception as e:
+            logger.error(f"Ошибка при очистке сигналов: {e}")
+        logger.error(traceback.format_exc())
+            await asyncio.sleep(60)
+
+# --- Запуск бота ---
+async def main():
+    start_time = datetime.now()
+    logger.info("====== ТОРГОВЫЙ БОТ ЗАПУЩЕН ======")
+    logger.info(f"Время запуска: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    try:
+        # Проверяем подключение к бирже (используем fetch_markets вместо fetch_status)
+        markets = await exchange.fetch_markets()
+        logger.info(f"Подключение к Bitget установлено. Доступно {len(markets)} рынков")
+    except Exception as e:
+        logger.error(f"Ошибка при подключении к бирже: {str(e)}")
+        logger.error(traceback.format_exc())
+    
+    # Запускаем задачу периодического сканирования монет с индивидуальными таймфреймами
+    scan_task = asyncio.create_task(periodic_scan())
+    logger.info("Задача периодического сканирования запущена")
+    
+    # Запускаем задачу проверки соответствия времени UTC таймфрейму
+    utc_check_task = asyncio.create_task(check_utc_timeframe_alignment())
+    logger.info("Задача проверки UTC времени запущена")
+    
+    # Запускаем задачу очистки устаревших сигналов
+    signals_clean_task = asyncio.create_task(clean_expired_signals())
+    logger.info("Задача очистки устаревших сигналов запущена")
+    
+    try:
+        # Запускаем бота с обработкой ошибок
+        logger.info("Запуск Telegram бота...")
+        await dp.start_polling(bot)
+    except asyncio.CancelledError:
+        logger.info("Получен сигнал на завершение работы")
+    except Exception as e:
+        logger.error(f"Критическая ошибка в работе Telegram бота: {str(e)}")
+        logger.error(traceback.format_exc())
+    finally:
+        logger.info("Остановка всех задач и закрытие соединений...")
+        # Отменяем все задачи перед завершением
+        for task in [scan_task, utc_check_task, signals_clean_task]:
+            if not task.done():
+                task.cancel()
+                try:
+                    await task
+            except asyncio.CancelledError:
+                pass
+                
+        await exchange.close()  # Закрываем соединение с биржей
+        await bot.session.close()  # Закрываем сессию бота
+        
+        uptime = datetime.now() - start_time
+        uptime_seconds = uptime.total_seconds()
+        bot_logger.log_bot_stop(uptime_seconds)
+
+async def call_bitget_api(endpoint, method="GET", params=None):
+    """
+    Выполняет прямой вызов API Bitget с аутентификацией.
+    
+    Args:
+        endpoint (str): Эндпоинт API, например "/api/v2/mix/order/place-plan-order"
+        method (str): HTTP метод (GET, POST и т.д.)
+        params (dict): Параметры запроса
+        
+    Returns:
+        dict: Ответ от API Bitget
+    """
+    try:
+        api_key = API_KEY
+        secret_key = SECRET_KEY
+        passphrase = PASSPHRASE
+        timestamp = str(int(time.time() * 1000))
+        
+        # Формируем путь к эндпоинту
+        if not endpoint.startswith('/'):
+            endpoint = '/' + endpoint
+            
+        # Полный URL
+        url = f"https://api.bitget.com{endpoint}"
+        
+        # Проверяем и корректируем параметры в зависимости от endpoint и planType
+        adjusted_params = params.copy() if params else {}
+        
+        if endpoint == "/api/v2/mix/order/place-plan-order" and params:
+            plan_type = params.get("planType", "")
+            
+            # Если это обычный план (normal_plan), удаляем delegateCount, если он есть
+            if plan_type == "normal_plan" and "delegateCount" in adjusted_params:
+                del adjusted_params["delegateCount"]
+                logger.info("Удален параметр delegateCount для normal_plan")
+                
+            # Если это трейлинг-стоп (trailing_stop_plan), добавляем delegateCount, если его нет
+            elif plan_type == "trailing_stop_plan" and "delegateCount" not in adjusted_params:
+                adjusted_params["delegateCount"] = "1"
+                logger.info("Добавлен параметр delegateCount для trailing_stop_plan")
+        
+        # Подготовка параметров запроса
+        body = ""
+        if adjusted_params:
+            body = json.dumps(adjusted_params)
+            
+        # Создаем подпись
+        message = timestamp + method + endpoint + body
+        signature = base64.b64encode(
+            hmac.new(
+                secret_key.encode('utf-8'), 
+                message.encode('utf-8'), 
+                hashlib.sha256
+            ).digest()
+        ).decode()
+        
+        # Заголовки запроса
+        headers = {
+            'ACCESS-KEY': api_key,
+            'ACCESS-SIGN': signature,
+            'ACCESS-TIMESTAMP': timestamp,
+            'ACCESS-PASSPHRASE': passphrase,
+            'Content-Type': 'application/json'
+        }
+        
+        logger.info(f"Отправка запроса к Bitget API: {method} {url}")
+        logger.info(f"Параметры запроса: {adjusted_params}")
+        
+        # Выполняем запрос
+        async with aiohttp.ClientSession() as session:
+            if method == "GET":
+                async with session.get(url, headers=headers) as response:
+                    result = await response.json()
+            elif method == "POST":
+                async with session.post(url, headers=headers, data=body) as response:
+                    result = await response.json()
+            else:
+                logger.error(f"Неподдерживаемый метод HTTP: {method}")
+                return None
+                
+        logger.info(f"Ответ от Bitget API: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Ошибка при вызове Bitget API: {str(e)}")
+        logger.error(traceback.format_exc())
+        return None
+
+if __name__ == "__main__":
+    try:
+        logger.info("Запуск основной функции бота...")
+    asyncio.run(main()) 
+    except KeyboardInterrupt:
+        logger.info("Бот остановлен пользователем (Ctrl+C)")
+    except Exception as e:
+        logger.critical(f"Критическая ошибка при запуске бота: {str(e)}")
+        logger.critical(traceback.format_exc()) 
