@@ -121,12 +121,22 @@ class Strategy(ABC):
         signal = await self.check_entry_signals(df)
         
         if signal:
+            # Стандартизируем формат сигнала
             signal['strategy_name'] = self.name
             signal['symbol'] = self.symbol
             signal['timeframe'] = self.timeframe
             signal['timestamp'] = datetime.now()
             
-            self.logger.info(f"Сгенерирован сигнал {signal['type']} для {self.symbol} по цене {signal['price']:.4f}")
+            # Добавляем поля для совместимости с trader.open_trade
+            if 'type' in signal and 'side' not in signal:
+                # Преобразуем 'type' в 'side' для соответствия требованиям trader.open_trade
+                signal['side'] = signal['type']
+                
+            # Добавляем поле tradeSide со значением 'open' по умолчанию
+            if 'tradeSide' not in signal:
+                signal['tradeSide'] = 'open'
+            
+            self.logger.info(f"Сгенерирован сигнал {signal.get('type', signal.get('side', 'Unknown'))} для {self.symbol} по цене {signal['price']:.4f}")
         else:
             self.logger.info(f"Сигналов для {self.symbol} не найдено")
         

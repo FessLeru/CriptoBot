@@ -67,4 +67,4 @@ EXCEL_STYLES = {
 
 # Create reports directory if it doesn't exist
 if not os.path.exists(REPORTS_DIR):
-    os.makedirs(REPORTS_DIR) 
+    os.makedirs(REPORTS_DIR)

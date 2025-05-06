@@ -2843,3 +2843,100 @@ ccxt.base.errors.ExchangeNotAvailable: bitget GET https://api.bitget.com/api/v2/
 2025-05-06 10:39:45,110 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
 2025-05-06 10:48:54,301 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
 2025-05-06 10:50:45,935 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 11:41:08,911 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 11:53:20,371 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 11:57:24,523 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:00:03,642 - strategy.ETHStrategy - ETHStrategy - INFO - Выполнение анализа для ETH/USDT на таймфрейме 45m
+2025-05-06 12:00:03,643 - strategy.ETHStrategy - ETHStrategy - INFO - Получение OHLCV данных для ETH/USDT на таймфрейме 45m
+2025-05-06 12:00:04,100 - strategy.ETHStrategy - ETHStrategy - ERROR - Ошибка при получении данных для ETH/USDT на таймфрейме 45m: bitget {"code":"400171","msg":"Parameter verification failed k-line time range  should be [1min,3min,5min,15min,30min,1h,4h,6h,12h,1day,1week,1M,6Hutc,12Hutc,1Dutc,3Dutc,1Wutc,1Mutc]","requestTime":1746522005680,"data":null}
+2025-05-06 12:00:04,107 - strategy.ETHStrategy - ETHStrategy - ERROR - Traceback (most recent call last):
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\strategies\__init__.py", line 86, in fetch_data
+    ohlcv = await self.exchange.fetch_ohlcv(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\bitget.py", line 3257, in fetch_ohlcv
+    response = await self.publicSpotGetV2SpotMarketCandles(self.extend(request, params))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 859, in request
+    return await self.fetch2(path, api, method, params, headers, body, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 855, in fetch2
+    raise e
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 846, in fetch2
+    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 254, in fetch
+    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\bitget.py", line 8211, in handle_errors
+    raise ExchangeError(feedback)  # unknown message
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ccxt.base.errors.ExchangeError: bitget {"code":"400171","msg":"Parameter verification failed k-line time range  should be [1min,3min,5min,15min,30min,1h,4h,6h,12h,1day,1week,1M,6Hutc,12Hutc,1Dutc,3Dutc,1Wutc,1Mutc]","requestTime":1746522005680,"data":null}
+
+2025-05-06 12:00:04,108 - strategy.ETHStrategy - ETHStrategy - WARNING - Недостаточно данных для анализа ETH/USDT
+2025-05-06 12:38:05,973 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:40:01,957 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:40:26,398 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:41:21,872 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:43:18,207 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:43:53,887 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:45:20,736 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:45:39,877 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:49:27,771 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:50:14,968 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:51:19,282 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:54:50,319 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 12:55:39,184 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:03:18,010 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:05:03,822 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:08:22,303 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:08:59,861 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:11:58,770 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:14:27,980 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:16:29,351 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:17:27,593 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:20:41,503 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:23:25,849 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:24:09,148 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:24:27,322 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:27:09,934 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:28:06,654 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:30:01,736 - strategy.ETHStrategy - ETHStrategy - INFO - Выполнение анализа для ETH/USDT на таймфрейме 45m
+2025-05-06 13:30:01,737 - strategy.ETHStrategy - ETHStrategy - INFO - Получение OHLCV данных для ETH/USDT на таймфрейме 45m
+2025-05-06 13:30:02,127 - strategy.ETHStrategy - ETHStrategy - ERROR - Ошибка при получении данных для ETH/USDT на таймфрейме 45m: bitget {"code":"400171","msg":"参数校验失败 k线时间范围 应该 [1min,3min,5min,15min,30min,1h,4h,6h,12h,1day,1week,1M,6Hutc,12Hutc,1Dutc,3Dutc,1Wutc,1Mutc]","requestTime":1746527403444,"data":null}
+2025-05-06 13:30:02,139 - strategy.ETHStrategy - ETHStrategy - ERROR - Traceback (most recent call last):
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\strategies\__init__.py", line 86, in fetch_data
+    ohlcv = await self.exchange.fetch_ohlcv(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\bitget.py", line 3257, in fetch_ohlcv
+    response = await self.publicSpotGetV2SpotMarketCandles(self.extend(request, params))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 859, in request
+    return await self.fetch2(path, api, method, params, headers, body, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 855, in fetch2
+    raise e
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 846, in fetch2
+    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 254, in fetch
+    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
+  File "E:\ProgramFilesX\Codes\Crypto_for_andrey\CriptoBot\.venv\Lib\site-packages\ccxt\async_support\bitget.py", line 8211, in handle_errors
+    raise ExchangeError(feedback)  # unknown message
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ccxt.base.errors.ExchangeError: bitget {"code":"400171","msg":"参数校验失败 k线时间范围 应该 [1min,3min,5min,15min,30min,1h,4h,6h,12h,1day,1week,1M,6Hutc,12Hutc,1Dutc,3Dutc,1Wutc,1Mutc]","requestTime":1746527403444,"data":null}
+
+2025-05-06 13:30:02,140 - strategy.ETHStrategy - ETHStrategy - WARNING - Недостаточно данных для анализа ETH/USDT
+2025-05-06 13:30:13,458 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:31:40,959 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:32:33,223 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:33:58,510 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:38:09,325 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:40:37,723 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:43:53,806 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:45:23,060 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:46:12,301 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:47:44,206 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 13:50:12,869 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 21:38:52,832 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 21:45:13,529 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 22:06:46,836 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)
+2025-05-06 22:07:12,318 - strategy.ETHStrategy - ETHStrategy - INFO - Стратегия ETHStrategy для ETH/USDT инициализирована (таймфрейм: 45m)

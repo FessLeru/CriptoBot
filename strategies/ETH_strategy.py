@@ -84,12 +84,12 @@ class ETHStrategy(Strategy):
         
         # Формируем условия для входа
         long_condition = (
-            trend_long and momentum_long and volume_long and
+            trend_long and momentum_long and volume_long and 
             self.trade_direction in ["long", "both"]
         )
         
         short_condition = (
-            trend_short and momentum_short and volume_short and
+            trend_short and momentum_short and volume_short and 
             self.trade_direction in ["short", "both"]
         )
         
@@ -101,19 +101,22 @@ class ETHStrategy(Strategy):
         sl_long_points = entry_price * self.fixed_sl_pct / 100
         sl_short_points = entry_price * self.fixed_sl_pct / 100
         
-        trail_trigger_points = entry_price * self.trail_trigger_pct / 100
-        trail_step_points = entry_price * self.trail_step_pct / 100
+        # Абсолютные значения для трейлинг-стопа (в валюте, не в процентах)
+        trail_trigger_points = entry_price * self.trail_trigger_pct / 100  # Активация трейлинга
+        trail_step_points = entry_price * self.trail_step_pct / 100  # Шаг трейлинга
         
         # Long сигнал
         if long_condition:
             stop_loss = entry_price - sl_long_points  # Фиксированный стоп-лосс для лонга
             
             signal = {
-                "type": "buy",
+                "side": "buy",  # Используем 'side' вместо 'type'
+                "type": "market",  # Тип ордера
+                "tradeSide": "open",  # Направление торговли
                 "price": entry_price,
                 "stop_loss": stop_loss,
-                "trail_points": trail_trigger_points,
-                "trail_offset": trail_step_points,
+                "trail_points": trail_trigger_points,  # Абсолютное значение для активации
+                "trail_offset": trail_step_points,     # Абсолютное значение для шага
                 "trail_mode": True
             }
         
@@ -122,11 +125,13 @@ class ETHStrategy(Strategy):
             stop_loss = entry_price + sl_short_points  # Фиксированный стоп-лосс для шорта
             
             signal = {
-                "type": "sell",
+                "side": "sell",  # Используем 'side' вместо 'type'
+                "type": "market",  # Тип ордера
+                "tradeSide": "open",  # Направление торговли
                 "price": entry_price,
                 "stop_loss": stop_loss,
-                "trail_points": trail_trigger_points,
-                "trail_offset": trail_step_points,
+                "trail_points": trail_trigger_points,  # Абсолютное значение для активации
+                "trail_offset": trail_step_points,     # Абсолютное значение для шага
                 "trail_mode": True
             }
         

@@ -25,12 +25,31 @@ class BitgetExchange:
             'apiKey': self.api_key,
             'secret': self.secret_key,
             'password': self.passphrase,
-            'options': {'defaultType': 'swap'},  # Фьючерсы Bitget
+            'options': {
+                'defaultType': 'swap',  # Фьючерсы Bitget
+                'defaultMarginMode': 'isolated',  # Изолированная маржа
+                'defaultContractType': 'perpetual'  # Бессрочные контракты
+            },
             'enableRateLimit': True
         })
         
-        logger.info("Инициализирован клиент Bitget")
+        logger.info("Инициализирован клиент Bitget для фьючерсной торговли")
         
+    def _format_symbol(self, symbol: str) -> str:
+        """
+        Преобразует символ в формат Bitget API для фьючерсов.
+        
+        Args:
+            symbol: Символ в формате 'BTC/USDT'
+            
+        Returns:
+            str: Символ в формате 'BTCUSDT'
+        """
+        if '/' in symbol:
+            base, quote = symbol.split('/')
+            return f"{base}{quote}"
+        return symbol
+
     async def __aenter__(self):
         """Контекстный менеджер для асинхронного использования."""
         return self
@@ -55,7 +74,10 @@ class BitgetExchange:
         Returns:
             Dict: Информация о балансе
         """
-        default_params = {'type': 'swap'}
+        default_params = {
+            'instType': 'swap',
+            'marginCoin': 'USDT'
+        }
         if params:
             default_params.update(params)
             
@@ -69,7 +91,7 @@ class BitgetExchange:
             float: Баланс USDT
         """
         try:
-            balance = await self.fetch_balance({'type': 'swap'})
+            balance = await self.fetch_balance()
             return balance['total'].get('USDT', 0)
         except Exception as e:
             logger.error(f"Ошибка при получении баланса USDT: {e}")
@@ -90,24 +112,53 @@ class BitgetExchange:
             if leverage < 1 or leverage > 100:
                 raise ValueError("Плечо должно быть в диапазоне от 1 до 100")
                 
-            # Добавляем обязательный параметр marginCoin для Bitget API
+            formatted_symbol = self._format_symbol(symbol)
             params = {
+                "instType": "swap",
                 "marginCoin": "USDT",
-                "instId": symbol  # Идентификатор инструмента
+                "symbol": formatted_symbol,
+                "leverage": str(leverage)
             }
             
-            response = await self.exchange.set_leverage(leverage, symbol, params=params)
-            logger.info(f"Плечо для {symbol} установлено на {leverage}")
+            response = await self.exchange.set_leverage(leverage, formatted_symbol, params=params)
+            logger.info(f"Плечо для {formatted_symbol} установлено на {leverage}")
             return response
         except Exception as e:
             logger.error(f"Ошибка при установке плеча для {symbol}: {e}")
             raise
     
+    async def get_ticker_price(self, symbol: str) -> Dict:
+        """
+        Получает актуальные данные о цене для указанного символа.
+        
+        Args:
+            symbol: Торговый символ
+            
+        Returns:
+            Dict: Данные о цене, включая mark price и index price
+        """
+        try:
+            formatted_symbol = self._format_symbol(symbol)
+            params = {
+                "instType": "swap",
+                "marginCoin": "USDT"
+            }
+            
+            ticker = await self.exchange.fetch_ticker(formatted_symbol, params=params)
+            return {
+                'last': ticker['last'],
+                'mark': ticker.get('mark', ticker['last']),
+                'index': ticker.get('index', ticker['last'])
+            }
+        except Exception as e:
+            logger.error(f"Ошибка при получении данных о цене для {symbol}: {e}")
+            raise
+
     async def create_market_order(self, 
                                 symbol: str, 
                                 side: str, 
                                 amount: float, 
-                                price: float,  # Добавляем параметр цены
+                                price: float = None,
                                 stop_loss: float = None,
                                 trail_activation: float = None,
                                 trail_callback: float = None) -> Dict:
@@ -118,7 +169,7 @@ class BitgetExchange:
             symbol: Торговый символ
             side: Сторона сделки ('buy' или 'sell')
             amount: Объем сделки в базовой валюте
-            price: Цена для расчета quoteSize
+            price: Цена для расчета quoteSize (опционально для рыночных ордеров)
             stop_loss: Цена стоп-лосса
             trail_activation: Активационная цена для трейлинг-стопа
             trail_callback: Процент отступа для трейлинг-стопа
@@ -127,31 +178,44 @@ class BitgetExchange:
             Dict: Информация о созданном ордере
         """
         try:
+            formatted_symbol = self._format_symbol(symbol)
             position_side = "long" if side == "buy" else "short"
+            
+            # Получаем актуальные данные о цене
+            ticker_data = await self.get_ticker_price(formatted_symbol)
+            current_price = ticker_data['mark']  # Используем mark price для расчетов
             
             # Рассчитываем quoteSize (сумма в USDT)
             amount = round(amount, 6)
-            quote_size = amount * price
+            quote_size = amount * current_price
             quote_size = round(quote_size, 8)
+            
+            # Проверяем минимальный размер ордера (1 USDT)
+            if quote_size < 1:
+                amount = 1 / current_price
+                amount = round(amount, 6)
+                quote_size = 1
             
             # Форматируем значения для избежания научной нотации
             amount_str = f"{amount:.6f}".rstrip('0').rstrip('.') if '.' in f"{amount:.6f}" else f"{amount:.6f}"
             quote_size_str = f"{quote_size:.8f}".rstrip('0').rstrip('.') if '.' in f"{quote_size:.8f}" else f"{quote_size:.8f}"
             
-            print(f"quote_size: {quote_size_str}, amount: {amount_str}")
+            logger.info(f"Создание ордера: baseSize={amount_str}, quoteSize={quote_size_str} USDT, mark price={current_price}")
             
-            # Базовые параметры ордера
+            # Базовые параметры ордера для фьючерсов
             order_params = {
                 "timeInForce": "GTC",
                 "reduceOnly": False,
                 "positionSide": position_side,
-                "type": "swap",
+                "instType": "swap",
                 "marginMode": "isolated",
                 "marginCoin": "USDT",
                 "loanType": "normal",
-                "baseSize": amount_str,                # Количество в базовой валюте (BTC, ETH и т.д.)
-                "quoteSize": quote_size_str,           # Количество в котируемой валюте (USDT)
-                "priceType": "market"                   # Указываем тип цены как рыночный
+                "baseSize": amount_str,
+                "quoteSize": quote_size_str,
+                "priceType": "market",
+                "triggerPrice": current_price,
+                "triggerType": "mark_price"
             }
             
             # Добавляем стоп-лосс если указан
@@ -163,21 +227,23 @@ class BitgetExchange:
                 
             # Добавляем трейлинг-стоп если указаны параметры
             if trail_activation and trail_callback:
+                # Bitget требует callbackRate в процентах
                 order_params["trailingStop"] = {
-                    "activationPrice": trail_activation,
-                    "callbackRate": trail_callback
+                    "activationPrice": float(trail_activation),
+                    "callbackRate": float(trail_callback)
                 }
+                logger.info(f"Добавлен трейлинг-стоп: активация при {trail_activation}, callback {trail_callback}%")
                 
-            # Создаем рыночный ордер
+            # Создаем рыночный ордер с явным указанием типа рынка
             order = await self.exchange.create_order(
-                symbol=symbol,
+                symbol=formatted_symbol,
                 type="market",
                 side=side,
                 amount=amount,
                 params=order_params
             )
             
-            logger.info(f"Создан рыночный ордер {side.upper()} для {symbol} на объем {amount_str}")
+            logger.info(f"Создан рыночный ордер {side.upper()} для {formatted_symbol} на объем {amount_str}")
             return order
             
         except Exception as e:
@@ -197,13 +263,14 @@ class BitgetExchange:
             List: Список OHLCV свечей
         """
         try:
+            formatted_symbol = self._format_symbol(symbol)
             params = {
-                "instType": "swap",  # Указываем тип инструмента - фьючерсы
-                "marginCoin": "USDT"  # Маржинальная валюта
+                "instType": "swap",
+                "marginCoin": "USDT"
             }
             
             ohlcv = await self.exchange.fetch_ohlcv(
-                symbol=symbol,
+                symbol=formatted_symbol,
                 timeframe=timeframe,
                 limit=limit,
                 params=params
@@ -225,9 +292,13 @@ class BitgetExchange:
             List: Список открытых ордеров
         """
         try:
-            params = {"marginCoin": "USDT"}
+            params = {
+                "instType": "swap",
+                "marginCoin": "USDT"
+            }
             if symbol:
-                return await self.exchange.fetch_open_orders(symbol=symbol, params=params)
+                formatted_symbol = self._format_symbol(symbol)
+                return await self.exchange.fetch_open_orders(symbol=formatted_symbol, params=params)
             else:
                 return await self.exchange.fetch_open_orders(params=params)
         except Exception as e:
@@ -245,9 +316,13 @@ class BitgetExchange:
             List: Список открытых позиций
         """
         try:
-            params = {"marginCoin": "USDT"}
+            params = {
+                "instType": "swap",
+                "marginCoin": "USDT"
+            }
             if symbol:
-                params["symbol"] = symbol
+                formatted_symbol = self._format_symbol(symbol)
+                params["symbol"] = formatted_symbol
                 
             return await self.exchange.fetch_positions(params=params)
         except Exception as e:
@@ -266,9 +341,13 @@ class BitgetExchange:
             Dict: Результат отмены ордера
         """
         try:
-            params = {"marginCoin": "USDT"}
-            result = await self.exchange.cancel_order(order_id, symbol, params=params)
-            logger.info(f"Ордер {order_id} для {symbol} отменен")
+            formatted_symbol = self._format_symbol(symbol)
+            params = {
+                "instType": "swap",
+                "marginCoin": "USDT"
+            }
+            result = await self.exchange.cancel_order(order_id, formatted_symbol, params=params)
+            logger.info(f"Ордер {order_id} для {formatted_symbol} отменен")
             return result
         except Exception as e:
             logger.error(f"Ошибка при отмене ордера {order_id} для {symbol}: {e}")
@@ -312,10 +391,11 @@ class BitgetExchange:
         """
         try:
             symbol = position['symbol']
+            formatted_symbol = self._format_symbol(symbol)
             contracts = float(position['contracts'])
             
             if contracts <= 0:
-                logger.warning(f"Позиция {symbol} уже закрыта (объем = {contracts})")
+                logger.warning(f"Позиция {formatted_symbol} уже закрыта (объем = {contracts})")
                 return True
                 
             side = 'sell' if position['side'] == 'long' else 'buy'
@@ -330,28 +410,29 @@ class BitgetExchange:
             contracts_str = f"{contracts:.6f}".rstrip('0').rstrip('.') if '.' in f"{contracts:.6f}" else f"{contracts:.6f}"
             quote_size_str = f"{quote_size:.8f}".rstrip('0').rstrip('.') if '.' in f"{quote_size:.8f}" else f"{quote_size:.8f}"
             
-            logger.info(f"Закрытие позиции {symbol}: контракты={contracts_str}, сумма={quote_size_str} USDT")
+            logger.info(f"Закрытие позиции {formatted_symbol}: контракты={contracts_str}, сумма={quote_size_str} USDT")
             
-            # Добавляем обязательные параметры для Bitget API
+            # Параметры для закрытия позиции
             params = {
-                'reduceOnly': True,
+                'instType': 'swap',
                 'marginCoin': 'USDT',
                 'positionSide': position['side'],
-                'loanType': 'isolated',
-                'baseSize': contracts_str,             # Количество в базовой валюте
-                'quoteSize': quote_size_str,           # Количество в котируемой валюте (USDT)
-                'priceType': 'market'                   # Указываем тип цены как рыночный
+                'marginMode': 'isolated',
+                'loanType': 'normal',
+                'baseSize': contracts_str,
+                'quoteSize': quote_size_str,
+                'priceType': 'market'
             }
             
             await self.exchange.create_order(
-                symbol=symbol,
+                symbol=formatted_symbol,
                 type='market',
                 side=side,
                 amount=contracts,
                 params=params
             )
             
-            logger.info(f"Позиция {symbol} ({position['side']}) успешно закрыта")
+            logger.info(f"Позиция {formatted_symbol} ({position['side']}) успешно закрыта")
             return True
         except Exception as e:
             logger.error(f"Ошибка при закрытии позиции {position['symbol']}: {e}")

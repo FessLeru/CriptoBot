@@ -2919,3 +2919,338 @@ ccxt.base.errors.ExchangeError: bitget {"code":"400171","msg":"Parameter verific
 2025-05-06 10:51:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
 2025-05-06 10:51:03,628 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
 2025-05-06 10:51:03,810 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94421.4600
+2025-05-06 11:41:08,911 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 11:42:01,004 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:42:01,005 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:42:01,540 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:42:01,775 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:43:01,016 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:43:01,017 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:43:01,737 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:43:01,931 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:44:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:44:01,004 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:44:01,520 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:44:01,742 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:45:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:45:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:45:01,488 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:45:01,727 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:46:01,004 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:46:01,005 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:46:01,475 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:46:01,654 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:47:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:47:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:47:01,592 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:47:01,820 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:48:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:48:01,004 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:48:01,498 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:48:01,720 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:49:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:49:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:49:01,459 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:49:01,632 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:50:01,004 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:50:01,005 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:50:01,488 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:50:01,712 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:51:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:51:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:51:01,514 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:51:01,741 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:53:20,370 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 11:57:24,523 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 11:58:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:58:01,016 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:58:01,580 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:58:01,768 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 11:59:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 11:59:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 11:59:01,514 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 11:59:01,699 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал buy для BTC/USDT по цене 94350.8600
+2025-05-06 12:00:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:00:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:00:01,594 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:00:01,783 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал buy для BTC/USDT по цене 94381.2700
+2025-05-06 12:01:01,004 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:01:01,005 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:01:01,490 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:01:01,682 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал buy для BTC/USDT по цене 94369.6500
+2025-05-06 12:38:05,972 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:39:01,006 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:39:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:39:01,546 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:39:01,752 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 12:40:01,957 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:40:26,397 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:41:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:41:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:41:01,602 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:41:01,799 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94137.2100
+2025-05-06 12:41:21,871 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:43:18,206 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:43:53,887 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:44:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:44:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:44:01,386 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:44:01,594 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94134.5500
+2025-05-06 12:45:20,736 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:45:39,876 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:46:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:46:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:46:01,569 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:46:01,766 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94134.0000
+2025-05-06 12:47:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:47:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:47:01,614 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:47:01,816 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94118.4800
+2025-05-06 12:48:01,010 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:48:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:48:01,612 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:48:01,809 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 12:49:01,016 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:49:01,017 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:49:01,524 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:49:01,717 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 12:49:27,771 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:50:01,001 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:50:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:50:01,564 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:50:01,758 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 12:50:14,967 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:51:19,281 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:54:50,318 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:55:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:55:01,004 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:55:01,438 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:55:01,642 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 12:55:39,184 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 12:56:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:56:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:56:01,682 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:56:01,876 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 12:57:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:57:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:57:01,532 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:57:01,726 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 12:58:01,010 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 12:58:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 12:58:01,574 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 12:58:01,752 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:03:18,010 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:04:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:04:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:04:01,487 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:04:01,722 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:05:03,821 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:06:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:06:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:06:01,519 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:06:01,719 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:07:01,006 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:07:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:07:01,489 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:07:01,709 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:08:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:08:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:08:01,503 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:08:01,728 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:08:22,302 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:08:59,860 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:10:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:10:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:10:01,543 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:10:01,775 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:11:58,770 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:14:27,980 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:15:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:15:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:15:01,534 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:15:01,716 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94148.8900
+2025-05-06 13:16:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:16:01,010 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:16:01,493 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:16:01,698 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94148.8900
+2025-05-06 13:16:29,350 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:17:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:17:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:17:01,525 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:17:01,752 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94208.3900
+2025-05-06 13:17:27,593 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:18:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:18:01,016 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:18:01,455 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:18:01,696 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:20:41,502 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:21:01,005 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:21:01,005 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:21:01,465 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:21:01,699 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал buy для BTC/USDT по цене 94313.3800
+2025-05-06 13:22:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:22:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:22:01,520 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:22:01,716 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал buy для BTC/USDT по цене 94287.0400
+2025-05-06 13:23:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:23:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:23:01,479 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:23:01,686 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал buy для BTC/USDT по цене 94283.1300
+2025-05-06 13:23:25,848 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:24:01,006 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:24:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:24:01,533 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:24:01,731 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:24:09,147 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:24:27,321 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:27:09,934 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:28:06,653 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:29:01,010 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:29:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:29:01,571 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:29:01,811 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:30:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:30:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:30:01,513 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:30:01,734 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 13:30:13,457 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:31:40,958 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:32:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:32:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:32:01,510 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:32:01,725 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94215.1600
+2025-05-06 13:32:33,223 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:33:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:33:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:33:01,539 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:33:01,741 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94215.1600
+2025-05-06 13:33:58,509 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:38:09,324 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:40:37,722 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:41:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:41:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:41:01,520 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:41:01,751 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94145.3900
+2025-05-06 13:42:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:42:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:42:01,464 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:42:01,700 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94072.4100
+2025-05-06 13:43:01,010 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:43:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:43:01,456 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:43:01,669 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94061.0100
+2025-05-06 13:43:53,805 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:44:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:44:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:44:01,526 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:44:01,771 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94088.3100
+2025-05-06 13:45:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 13:45:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 13:45:01,500 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 13:45:01,719 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал sell для BTC/USDT по цене 94061.7100
+2025-05-06 13:45:23,059 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:46:12,300 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:47:44,206 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 13:50:12,868 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 21:38:52,830 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 21:39:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:39:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:39:03,677 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:39:03,781 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал buy для BTC/USDT по цене 94927.2400
+2025-05-06 21:45:13,528 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 21:46:01,001 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:46:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:46:01,462 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:46:01,563 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:47:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:47:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:47:01,560 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:47:01,667 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:48:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:48:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:48:01,545 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:48:01,643 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:49:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:49:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:49:01,610 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:49:01,704 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:50:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:50:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:50:01,555 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:50:01,662 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:51:01,006 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:51:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:51:01,643 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:51:01,745 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:52:01,001 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:52:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:52:02,068 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:52:02,184 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:53:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:53:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:53:01,584 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:53:01,678 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:54:01,008 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:54:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:54:01,516 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:54:01,611 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:55:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:55:01,002 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:55:01,538 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:55:01,637 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:56:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:56:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:56:01,590 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:56:01,694 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 21:57:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:57:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:57:01,529 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:57:01,627 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал market для BTC/USDT по цене 95049.3200
+2025-05-06 21:58:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:58:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:58:01,607 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:58:01,700 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал market для BTC/USDT по цене 95045.2100
+2025-05-06 21:59:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 21:59:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 21:59:01,650 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 21:59:01,747 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал market для BTC/USDT по цене 95069.6300
+2025-05-06 22:00:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:00:01,015 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:00:02,423 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:00:02,524 - strategy.BTCStrategy - BTCStrategy - INFO - Сгенерирован сигнал market для BTC/USDT по цене 95050.8000
+2025-05-06 22:06:46,835 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 22:07:12,317 - strategy.BTCStrategy - BTCStrategy - INFO - Стратегия BTCStrategy для BTC/USDT инициализирована (таймфрейм: 1m)
+2025-05-06 22:08:01,013 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:08:01,014 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:08:03,665 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:08:03,761 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:09:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:09:01,011 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:09:01,628 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:09:01,721 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:10:01,010 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:10:01,010 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:10:01,542 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:10:01,639 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:11:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:11:01,012 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:11:01,597 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:11:01,686 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:12:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:12:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:12:01,607 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:12:01,699 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:13:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:13:01,009 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:13:01,630 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:13:01,731 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:14:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:14:01,007 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:14:01,552 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:14:01,664 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:15:01,001 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:15:01,001 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m
+2025-05-06 22:15:01,550 - strategy.BTCStrategy - BTCStrategy - INFO - Получено 200 свечей для BTC/USDT
+2025-05-06 22:15:01,654 - strategy.BTCStrategy - BTCStrategy - INFO - Сигналов для BTC/USDT не найдено
+2025-05-06 22:16:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Выполнение анализа для BTC/USDT на таймфрейме 1m
+2025-05-06 22:16:01,003 - strategy.BTCStrategy - BTCStrategy - INFO - Получение OHLCV данных для BTC/USDT на таймфрейме 1m

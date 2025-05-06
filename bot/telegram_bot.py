@@ -92,7 +92,8 @@ class TelegramBot:
         try:
             # Формируем сообщение о сигнале
             symbol = signal["symbol"]
-            signal_type = "🟢 ЛОНГ" if signal["type"] == "buy" else "🔴 ШОРТ"
+            side = signal["side"]  # Используем 'side' вместо 'type'
+            signal_type = "🟢 ЛОНГ" if side == "buy" else "🔴 ШОРТ"
             price = signal["price"]
             stop_loss = signal["stop_loss"]
             trail_points = signal.get("trail_points", 0)
@@ -117,6 +118,7 @@ class TelegramBot:
             
         except Exception as e:
             logger.error(f"Ошибка при обработке сигнала: {str(e)}")
+            logger.exception(e)
     
     # --- Обработчики команд ---
     
