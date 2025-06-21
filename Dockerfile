@@ -1,6 +1,8 @@
 # Используем официальный Python образ
 FROM python:3.11-slim
 
+RUN mkdir -p /app
+
 # Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -21,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 RUN mkdir -p logs reports
 
 # Копируем весь код приложения
-COPY . .
+COPY . /app
 
 # Создаем пользователя для запуска приложения (для безопасности)
 RUN useradd -m -u 1000 botuser && \
