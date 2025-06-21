@@ -30,17 +30,17 @@ services:
         reservations:
           memory: "256M"
           cpus: '0.25'
+          
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 # Определяем именованные тома
 volumes:
   bot_logs:
     driver: local
   bot_reports:
-    driver: local
-
-healthcheck:
-  test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 40s 
+    driver: local 
