@@ -62,10 +62,12 @@ class StrategyScanner:
             
             try:
                 strategy = self.strategies[symbol]
-                signal = await strategy.execute()
+                
+                # Используем execute_with_conditions вместо execute для получения информации о причинах отсутствия сигнала
+                signal, failed_conditions = await strategy.execute_with_conditions()
                 
                 if signal:
-                    logger.info(f"Найден сигнал для {symbol}: {signal['type']} по цене {signal['price']:.4f}")
+                    logger.info(f"Найден сигнал для {symbol}: {signal.get('side', 'unknown')} {signal.get('type', 'unknown')} по цене {signal.get('price', 0):.4f}")
                     
                     # Вызываем функцию обратного вызова если она задана
                     if self.signal_callback:
@@ -73,7 +75,13 @@ class StrategyScanner:
                     
                     return signal
                 else:
-                    logger.info(f"Сигналов для {symbol} не найдено")
+                    # Логируем причины отсутствия сигнала
+                    if failed_conditions:
+                        # Форматируем причины для лучшей читаемости
+                        reasons = "\n   - " + "\n   - ".join(failed_conditions)
+                        logger.info(f"Сигналов для {symbol} не найдено. Причины:{reasons}")
+                    else:
+                        logger.info(f"Сигналов для {symbol} не найдено. Причина не определена.")
                     return None
                     
             except Exception as e:
@@ -100,9 +108,24 @@ class StrategyScanner:
                 # Ожидаем закрытия свечи + 1 секунда
                 await wait_for_candle_close(strategy.timeframe)
                 
-                # Сканируем символ
-                logger.info(f"Сканирование {symbol} на таймфрейме {strategy.timeframe} в {datetime.now().strftime('%H:%M:%S.%f')}")
-                await self.scan_symbol(symbol)
+                # Выполняем несколько сканирований с задержкой
+                num_scans = 3  # Количество сканирований
+                scan_delay = 5  # Задержка между сканированиями в секундах
+                
+                signal = None
+                for scan_num in range(1, num_scans + 1):
+                    # Сканируем символ
+                    logger.info(f"Сканирование {scan_num}/{num_scans} для {symbol} на таймфрейме {strategy.timeframe} в {datetime.now().strftime('%H:%M:%S.%f')}")
+                    signal = await self.scan_symbol(symbol)
+                    
+                    # Если сигнал найден или это последнее сканирование, завершаем цикл
+                    if signal or scan_num == num_scans:
+                        break
+                    
+                    # Если это не последнее сканирование, ждем перед следующим
+                    if scan_num < num_scans:
+                        logger.info(f"Ожидание {scan_delay} секунд перед следующим сканированием {symbol}")
+                        await asyncio.sleep(scan_delay)
                 
             except asyncio.CancelledError:
                 logger.info(f"Сканирование {symbol} отменено")

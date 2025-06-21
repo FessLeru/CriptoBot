@@ -106,7 +106,7 @@ class TradeReporter:
                 # Если нет активных позиций или ордеров, используем дефолтный список
                 if not symbols:
                     # Используем символы по умолчанию для USDT-маржинальной торговли
-                    symbols = ["BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT"]
+                    symbols = ["BTC/USDT", "ETH/USDT"]
                 
                 logger.info(f"Запрос истории сделок для символов: {symbols}")
                 
@@ -129,11 +129,11 @@ class TradeReporter:
                     currencies = [curr for curr in balance['total'].keys() if float(balance['total'][curr]) > 0]
                     
                     # Строим пары для USDT-маржинальной торговли
-                    symbols = [f"{curr}/USDT:USDT" for curr in currencies if curr != 'USDT']
+                    symbols = [f"{curr}/USDT" for curr in currencies if curr != 'USDT']
                     
                     # Если нет валют, используем основные
                     if not symbols:
-                        symbols = ["BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT"]
+                        symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
                     
                     logger.info(f"Используем альтернативный список символов: {symbols}")
                     

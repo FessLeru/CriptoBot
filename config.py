@@ -11,40 +11,43 @@ TRAILING_STOP_ACTIVATION_PERCENT = 0.7  # Процент прибыли для �
 TRAILING_STEP_PERCENT = 0.25  # Шаг трейлинг-стопа в процентах
 PRICE_CHECK_INTERVAL = 5.0  # Интервал проверки цены в секундах (не слишком частый, чтобы не превысить API лимиты)
 
-# Indicator parameters for different timeframes
+# Indicator parameters for selected timeframes
 TIMEFRAME_PARAMS = {
-    "5m": {  # Скальпинг на 5-минутном таймфрейме
-        "frama_length": 10,
-        "stc_length": 21,
-        "vfi_length": 100,
-        "trail_trigger_percent": 0.7,  # 0.7% для активации трейлинга
-        "trail_step_percent": 0.25,    # 0.25% шаг трейлинга
-        "fixed_stop_percent": 0.5,     # 0.5% фиксированный стоп-лосс
-    },
-    "15m": {
-        "frama_length": 10,
-        "stc_length": 21,
-        "vfi_length": 100,
-        "trail_trigger_percent": 0.7,  # 0.7% для активации трейлинга
-        "trail_step_percent": 0.25,    # 0.25% шаг трейлинга
-        "fixed_stop_percent": 0.5,     # 0.5% фиксированный стоп-лосс
-    },
     "1h": {
-        "frama_length": 10, 
-        "stc_length": 21,
-        "vfi_length": 100,
-        "trail_trigger_percent": 0.7,  # 0.7% для активации трейлинга
-        "trail_step_percent": 0.25,    # 0.25% шаг трейлинга
-        "fixed_stop_percent": 0.5,     # 0.5% фиксированный стоп-лосс
+        "frama_length": 14,
+        "adx_length": 14,
+        "rsi_length": 14,
+        "ema_length": 200,
+        "stop_loss_percent": 1.0,
+        "trail_trigger_percent": 1.5,
+        "trail_step_percent": 0.7,
+        "adx_min": 15,
+        "rsi_entry_margin": 5,
+        "stc_length": 23,
+        "vfi_length": 120,
+    },
+    "4h": {
+        "frama_length": 14,
+        "adx_length": 14,
+        "rsi_length": 14,
+        "ema_length": 200,
+        "fixed_stop_percent": 1.0,
+        "trail_trigger_percent": 1.5,
+        "trail_step_percent": 0.7,
+        "adx_min": 15,
+        "rsi_entry_margin": 5,
+        "stc_length": 23,
+        "vfi_length": 120,
+        "stop_loss_percent": 1.0,
     }
 }
 
 # Default timeframe
-DEFAULT_TIMEFRAME = "15m"  # Среднесрочная торговля на 15-минутном таймфрейме
+DEFAULT_TIMEFRAME = "4h"
 
 # Trading parameters
-LEVERAGE = 20
-POSITION_SIZE_PERCENT = 15 # Percentage of balance to use per trade
+LEVERAGE = 5
+POSITION_SIZE_PERCENT = 6  # Percentage of balance to use per trade
 
 # Trade direction - set to "both" to allow long and short positions
 TRADE_DIRECTION = "both"  # Options: "both", "long", "short"
@@ -62,7 +65,7 @@ EXCEL_STYLES = {
     "profit_color": "C6EFCE",  # Light green
     "loss_color": "FFC7CE",    # Light red
     "font_color": "FFFFFF",    # White for headers
-    "border_style": "thin"     # Border style for cells
+    "border_style": "thin"      # Border style for cells
 }
 
 # Create reports directory if it doesn't exist

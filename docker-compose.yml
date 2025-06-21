@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  crypto-bot:
+    build: .
+    container_name: crypto-trading-bot
+    restart: unless-stopped
+    
+    # Переменные окружения из .env файла
+    env_file:
+      - .env
+    
+    # Монтируем директории для сохранения логов и отчетов
+    volumes:
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+    
+    # Настройки логирования Docker
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Политика перезапуска
+    restart: unless-stopped
+    
+    # Лимиты ресурсов
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    
+    # Проверка здоровья
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Дополнительные сервисы (если потребуются)
+# volumes:
+#   logs:
+#   reports: 

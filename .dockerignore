@@ -1,0 +1,55 @@
+# Исключаем файлы окружения (содержат секретные ключи)
+.env
+.env.*
+
+# Исключаем виртуальное окружение
+venv/
+.venv/
+
+# Исключаем кэш Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Исключаем логи (будут создаваться в контейнере)
+logs/*.log
+logs/*
+
+# Исключаем отчеты (будут создаваться в контейнере)
+reports/*.xlsx
+reports/*.json
+
+# Исключаем системные файлы
+.DS_Store
+Thumbs.db
+
+# Исключаем файлы IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Исключаем Git
+.git/
+.gitignore
+
+# Исключаем Docker файлы
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Исключаем файлы разработки
+README.MD
+*.md
+.pytest_cache/
+tests/
+
+# Исключаем бэкапы
+*.bak
+*.backup
+
+# Исключаем временные файлы
+tmp/
+temp/ 

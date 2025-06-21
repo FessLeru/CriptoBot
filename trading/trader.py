@@ -80,34 +80,64 @@ class Trader:
             trail_points = signal.get("trail_points", 0)
             trail_offset = signal.get("trail_offset", 0)
             trail_mode = signal.get("trail_mode", True)
+            strategy_name = signal.get("strategy_name", "Unknown")
+            timeframe = signal.get("timeframe", "Unknown")
+
+            # Логируем полученный сигнал
+            logger.info(f"Получен сигнал: {symbol} {side.upper()} от стратегии {strategy_name} ({timeframe})")
+            logger.info(f"Параметры сигнала: SL={stop_loss}, trail_points={trail_points}, trail_offset={trail_offset}")
 
             try:
                 # Проверяем, нет ли уже активного трейда по этому символу
                 if symbol in self.active_trades:
+                    logger.warning(f"Сигнал отклонен: уже есть активный трейд по {symbol}")
                     return f"⚠️ Уже есть активный трейд по {symbol}"
 
+                # Проверка корректности параметров сигнала
+                if not symbol or not side or not tradeSide:
+                    error_msg = f"Некорректные параметры сигнала: symbol={symbol}, side={side}, tradeSide={tradeSide}"
+                    logger.error(f"Сигнал отклонен: {error_msg}")
+                    return f"⚠️ Ошибка: {error_msg}"
+
                 # Устанавливаем плечо
-                await self.exchange.set_leverage(self.leverage, symbol)
+                try:
+                    await self.exchange.set_leverage(self.leverage, symbol)
+                except Exception as e:
+                    error_msg = f"Не удалось установить плечо {self.leverage} для {symbol}: {str(e)}"
+                    logger.error(f"Сигнал отклонен: {error_msg}")
+                    return f"⚠️ Ошибка: {error_msg}"
 
                 # Получаем баланс фьючерсов
                 usdt_balance = await self.exchange.get_usdt_balance()
-
                 logger.info(f"📈 Баланс фьючерсов USDT: {usdt_balance:.2f}")
 
                 # Проверка баланса
                 if usdt_balance < 5:  # Минимальный порог
-                    return f"⚠️ Ошибка: недостаточно средств на фьючерсах ({usdt_balance:.2f} USDT)"
+                    error_msg = f"Недостаточно средств на фьючерсах ({usdt_balance:.2f} USDT)"
+                    logger.error(f"Сигнал отклонен: {error_msg}")
+                    return f"⚠️ Ошибка: {error_msg}"
 
                 # Если amount не указан в сигнале, рассчитываем его
                 if amount == 0:
-                    # Получаем текущую цену для расчета объема
-                    ticker_data = await self.exchange.get_ticker_price(symbol)
-                    current_price = ticker_data['mark']  # Используем mark price
-                    
-                    # Расчет объема ордера (% от баланса с учетом плеча)
-                    amount = ((usdt_balance * self.leverage / 100) * self.position_size_percent) / current_price
-                    amount = round(amount, 6)
-                    logger.info(f"Рассчитанный объем ордера: {amount} {symbol.split('/')[0]} ({(usdt_balance * self.leverage / 100) * self.position_size_percent} USDT)")
+                    try:
+                        # Получаем текущую цену для расчета объема
+                        ticker_data = await self.exchange.get_ticker_price(symbol)
+                        current_price = ticker_data['mark']  # Используем mark price
+                        
+                        # Расчет объема ордера (% от баланса с учетом плеча)
+                        amount = ((usdt_balance * self.leverage / 100) * self.position_size_percent) / current_price
+                        amount = round(amount, 6)
+                        logger.info(f"Рассчитанный объем ордера: {amount} {symbol.split('/')[0]} ({(usdt_balance * self.leverage / 100) * self.position_size_percent} USDT)")
+                    except Exception as e:
+                        error_msg = f"Ошибка при расчете объема ордера: {str(e)}"
+                        logger.error(f"Сигнал отклонен: {error_msg}")
+                        return f"⚠️ Ошибка: {error_msg}"
+
+                # Проверка минимального объема ордера
+                if amount <= 0:
+                    error_msg = f"Некорректный объем ордера: {amount}"
+                    logger.error(f"Сигнал отклонен: {error_msg}")
+                    return f"⚠️ Ошибка: {error_msg}"
 
                 # Выводим данные перед созданием ордера
                 logger.info(
@@ -119,39 +149,66 @@ class Trader:
                 trail_activation = None
                 trail_callback = None
 
+                ticker_data = await self.exchange.get_ticker_price(symbol)
+                current_price = ticker_data['mark']  # Используем mark price
+                
                 if trail_mode:
-                    # Получаем текущую цену для трейлинг-стопа
-                    ticker_data = await self.exchange.get_ticker_price(symbol)
-                    current_price = ticker_data['mark']  # Используем mark price
+                    # Настраиваем трейлинг-стоп в зависимости от типа сделки (long/short)
+                    is_long = side == "buy"
                     
-                    # Для лонг-позиции активационная цена должна быть выше entry price
-                    # Для шорт-позиции активационная цена должна быть ниже entry price
-                    if side == "buy":  # LONG
-                        # Активационная цена = текущая цена + trail_points
-                        trail_activation = current_price + trail_points
-                        # Callback = процент от цены, на который может отступить цена до срабатывания
-                        trail_callback = (trail_offset / trail_activation) * 100  # Преобразуем в проценты для API
-                    else:  # SHORT
-                        # Активационная цена = текущая цена - trail_points
-                        trail_activation = current_price - trail_points
-                        # Callback = процент от цены, на который может отступить цена до срабатывания
-                        trail_callback = (trail_offset / trail_activation) * 100  # Преобразуем в проценты для API
+                    # Получаем параметры трейлинг-стопа из сигнала (это абсолютные значения)
+                    trail_trigger_points = trail_points  # Абсолютное значение для активации
+                    trail_step_points = trail_offset     # Абсолютное значение для шага
                     
-                    # Округляем значения для API
-                    trail_activation = round(trail_activation, 2)
-                    trail_callback = round(trail_callback, 2)
+                    # Для Long: активация выше текущей, для Short: активация ниже текущей
+                    if is_long:
+                        trail_activation = current_price + trail_trigger_points
+                    else:
+                        trail_activation = current_price - trail_trigger_points
                     
-                    logger.info(f"Трейлинг-стоп: активация при {trail_activation}, callback {trail_callback}%")
+                    # Шаг трейлинга используем как абсолютное значение
+                    trail_callback = trail_step_points
+                    
+                    logger.info(f"Настроен трейлинг-стоп: активация при {trail_activation:.2f}, "
+                               f"шаг отступа: {trail_callback:.6f} USDT")
 
                 # Создаем ордер через новый метод
-                order = await self.exchange.create_market_order(
-                    symbol=symbol,
-                    side=side,
-                    amount=amount,
-                    stop_loss=stop_loss,
-                    trail_activation=trail_activation,
-                    trail_callback=trail_callback
-                )
+                try:
+                    order = await self.exchange.create_market_order(
+                        symbol=symbol,
+                        side=side,
+                        amount=amount,
+                        stop_loss=stop_loss,
+                        trail_activation=trail_activation,
+                        trail_callback=trail_callback
+                    )
+                except Exception as e:
+                    error_msg = f"Ошибка при создании ордера: {str(e)}"
+                    logger.error(f"Сигнал отклонен: {error_msg}")
+                    # Логируем дополнительные детали ошибки для отладки
+                    logger.error(f"Детали ошибки для {symbol}: Сторона: {side}, Объем: {amount}, SL: {stop_loss}")
+                    
+                    # Проверяем и логируем специфические ошибки API Bitget
+                    if "insufficient balance" in str(e).lower():
+                        logger.error(f"Причина: Недостаточно средств на счете для открытия позиции указанного размера")
+                    elif "minimum" in str(e).lower():
+                        logger.error(f"Причина: Объем ордера меньше минимально допустимого для {symbol}")
+                    elif "maximum" in str(e).lower():
+                        logger.error(f"Причина: Объем ордера больше максимально допустимого для {symbol}")
+                    elif "precision" in str(e).lower():
+                        logger.error(f"Причина: Неверная точность для объема или цены")
+                    elif "rate limit" in str(e).lower():
+                        logger.error(f"Причина: Превышен лимит запросов API")
+                    elif "market closed" in str(e).lower() or "trading not open" in str(e).lower():
+                        logger.error(f"Причина: Рынок закрыт или торговля не доступна для {symbol}")
+                        
+                    return f"⚠️ Ошибка при создании ордера: {str(e)}"
+                
+                # Проверяем статус ордера
+                if not order or 'id' not in order:
+                    error_msg = f"Не удалось получить ID ордера, ответ API: {order}"
+                    logger.error(f"Сигнал отклонен: {error_msg}")
+                    return f"⚠️ Ошибка при создании ордера: не удалось получить ID ордера"
 
                 # Сохраняем информацию о трейде
                 self.active_trades[symbol] = {
@@ -159,17 +216,23 @@ class Trader:
                     'side': side,
                     'amount': amount,
                     'stop_loss': stop_loss,
+                    'trail_activation': trail_activation,
+                    'trail_callback': trail_callback,
+                    'trail_mode': trail_mode,
                     'start_time': datetime.now(),
-                    'strategy_name': signal.get('strategy_name', 'Unknown'),
-                    'timeframe': signal.get('timeframe', 'Unknown')
+                    'strategy_name': strategy_name,
+                    'timeframe': timeframe
                 }
 
-                trail_msg = " с трейлинг-стопом" if trail_mode else ""
-
+                trail_msg = f" с трейлинг-стопом (активация: {trail_activation:.2f}, отступ: {trail_callback:.6f} USDT)" if trail_mode else ""
+                logger.info(f"✅ Успешно открыта сделка {side.upper()} {symbol} на {amount:.4f}{trail_msg}")
                 return f"✅ Открыта сделка {side.upper()} {symbol} на {amount:.4f}{trail_msg}"
 
             except Exception as e:
-                logger.error(f"Ошибка при открытии сделки {symbol}: {str(e)}")
+                error_msg = f"Неожиданная ошибка при открытии сделки {symbol}: {str(e)}"
+                logger.error(error_msg)
+                logger.exception(e)  # Логируем полный стектрейс для диагностики
+                
                 # В случае ошибки удаляем трейд из активных
                 if symbol in self.active_trades:
                     del self.active_trades[symbol]
