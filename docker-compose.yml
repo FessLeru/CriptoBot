@@ -22,9 +22,6 @@ services:
         max-size: "10m"
         max-file: "3"
     
-    # Политика перезапуска
-    restart: unless-stopped
-    
     # Лимиты ресурсов
     deploy:
       resources:
