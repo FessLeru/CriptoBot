@@ -9,7 +9,7 @@ import numpy as np
 import math
 from datetime import datetime
 from strategies import Strategy
-from config import TIMEFRAME_PARAMS
+from config import BTC_CONFIG
 
 class BTCStrategy(Strategy):
     """
@@ -26,7 +26,7 @@ class BTCStrategy(Strategy):
         super().__init__(symbol="BTC/USDT", timeframe="4h", exchange=exchange)
         
         # Параметры стратегии из конфигурации
-        params = TIMEFRAME_PARAMS.get(self.timeframe, TIMEFRAME_PARAMS["4h"])
+        params = BTC_CONFIG.get(self.timeframe, BTC_CONFIG["4h"])
         
         self.frama_length = params["frama_length"]              # 12
         self.stc_length = params["stc_length"]                  # 23

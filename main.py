@@ -3,10 +3,9 @@
 Поддерживает множественные стратегии и асинхронную работу.
 """
 import asyncio
-import os
 import sys
-from datetime import datetime
-
+import winloop
+winloop.install()
 from dotenv import load_dotenv
 
 from bot_logging import logger

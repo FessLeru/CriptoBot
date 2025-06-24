@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import math
 from strategies import Strategy
-from config import TIMEFRAME_PARAMS
+from config import ETH_CONFIG
 
 class ETHStrategy(Strategy):
     """
@@ -26,7 +26,7 @@ class ETHStrategy(Strategy):
         super().__init__(symbol="ETH/USDT", timeframe="4h", exchange=exchange)
         
         # Параметры стратегии из конфигурации
-        params = TIMEFRAME_PARAMS.get(self.timeframe, TIMEFRAME_PARAMS["4h"])
+        params = ETH_CONFIG.get(self.timeframe, ETH_CONFIG["4h"])
         
         self.frama_length = params["frama_length"]              # 14
         self.adx_length = params["adx_length"]                  # 14  

@@ -11,21 +11,26 @@ TRAILING_STOP_ACTIVATION_PERCENT = 0.7  # Процент прибыли для �
 TRAILING_STEP_PERCENT = 0.25  # Шаг трейлинг-стопа в процентах
 PRICE_CHECK_INTERVAL = 5.0  # Интервал проверки цены в секундах (не слишком частый, чтобы не превысить API лимиты)
 
-# Indicator parameters for selected timeframes
-TIMEFRAME_PARAMS = {
-    "1h": {
+# Indicator parameters for BTC strategy
+BTC_CONFIG = {
+    "4h": {
         "frama_length": 14,
         "adx_length": 14,
         "rsi_length": 14,
         "ema_length": 200,
-        "stop_loss_percent": 1.0,
-        "trail_trigger_percent": 1.5,
-        "trail_step_percent": 0.7,
+        "fixed_stop_percent": 1.0,
+        "trail_trigger_percent": 1.0,
+        "trail_step_percent": 0.5,
         "adx_min": 15,
         "rsi_entry_margin": 5,
         "stc_length": 23,
         "vfi_length": 120,
-    },
+        "stop_loss_percent": 1.0,
+    }
+}
+
+# Indicator parameters for ETH strategy  
+ETH_CONFIG = {
     "4h": {
         "frama_length": 14,
         "adx_length": 14,
@@ -40,6 +45,24 @@ TIMEFRAME_PARAMS = {
         "vfi_length": 120,
         "stop_loss_percent": 1.0,
     }
+}
+
+# Legacy parameter for backward compatibility
+TIMEFRAME_PARAMS = {
+    "1h": {
+        "frama_length": 14,
+        "adx_length": 14,
+        "rsi_length": 14,
+        "ema_length": 200,
+        "stop_loss_percent": 1.0,
+        "trail_trigger_percent": 1.5,
+        "trail_step_percent": 0.7,
+        "adx_min": 15,
+        "rsi_entry_margin": 5,
+        "stc_length": 23,
+        "vfi_length": 120,
+    },
+    "4h": ETH_CONFIG["4h"]  # По умолчанию используем ETH конфиг
 }
 
 # Default timeframe

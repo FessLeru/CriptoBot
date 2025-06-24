@@ -823,10 +823,70 @@ class BitgetExchange:
                 formatted_symbol = self._format_symbol(symbol)
                 params["symbol"] = formatted_symbol
                 
-            return await self.exchange.fetch_positions(params=params)
+            positions = await self.exchange.fetch_positions(params=params)
+            
+            # Проверяем и очищаем неактивные трейлинг-стопы из словаря
+            await self._cleanup_inactive_trailing_stops(positions, symbol)
+            
+            return positions
         except Exception as e:
             logger.error(f"Ошибка при получении открытых позиций: {e}")
             return []
+    
+    async def _cleanup_inactive_trailing_stops(self, positions: List, target_symbol: Optional[str] = None):
+        """
+        Очищает словарь мониторинга от трейлинг-стопов для символов без активных позиций.
+        
+        Args:
+            positions: Список активных позиций
+            target_symbol: Целевой символ для очистки (опционально)
+        """
+        try:
+            # Создаем множество символов с активными позициями
+            active_symbols = set()
+            for position in positions:
+                if float(position.get('contracts', 0)) > 0:
+                    symbol = position['symbol']
+                    # Удаляем суффикс ':USDT' если он присутствует
+                    if ':' in symbol:
+                        symbol = symbol.split(':')[0]
+                    formatted_symbol = self._format_symbol(symbol)
+                    active_symbols.add(formatted_symbol)
+            
+            # Проверяем трейлинг-стопы в словаре мониторинга
+            trailing_keys_to_remove = []
+            
+            for key in list(self._order_monitor_tasks.keys()):
+                if key.endswith('_trailing_info'):
+                    # Извлекаем символ из ключа
+                    symbol_from_key = key.replace('_trailing_info', '')
+                    
+                    # Если указан целевой символ, проверяем только его
+                    if target_symbol:
+                        target_formatted = self._format_symbol(target_symbol)
+                        if symbol_from_key != target_formatted:
+                            continue
+                    
+                    # Если для этого символа нет активной позиции, помечаем ключ для удаления
+                    if symbol_from_key not in active_symbols:
+                        trailing_keys_to_remove.append(key)
+                        logger.info(f"Обнаружен неактивный трейлинг-стоп для {symbol_from_key} - позиция закрыта")
+            
+            # Удаляем неактивные ключи
+            for key in trailing_keys_to_remove:
+                if key in self._order_monitor_tasks:
+                    trailing_info = self._order_monitor_tasks[key]
+                    trail_order_id = trailing_info.get('order_id')
+                    symbol_name = key.replace('_trailing_info', '')
+                    
+                    logger.info(f"Удаляем неактивный трейлинг-стоп {trail_order_id} для {symbol_name} из словаря мониторинга")
+                    del self._order_monitor_tasks[key]
+                    
+                    # Также отменяем связанные задачи мониторинга
+                    await self.cancel_trailing_stop_tasks(symbol_name)
+                    
+        except Exception as e:
+            logger.error(f"Ошибка при очистке неактивных трейлинг-стопов: {e}")
     
     async def cancel_order(self, order_id: str, symbol: str) -> Dict:
         """

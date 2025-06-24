@@ -3,6 +3,7 @@ import os
 import json
 from datetime import datetime
 import traceback
+from typing import Dict, Optional
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from config import REPORTS_DIR, TRADES_EXCEL_FILE, EXCEL_STYLES
@@ -186,15 +187,8 @@ class TradeReporter:
                     'timestamp': datetime.fromtimestamp(trade['timestamp'] / 1000),
                 }
                 
-                # Рассчитываем PnL, если есть информация о позиции
-                if 'info' in trade and isinstance(trade['info'], dict):
-                    trade_info_data = trade['info']
-                    
-                    # Пытаемся извлечь PnL из ответа API
-                    if 'pnl' in trade_info_data:
-                        trade_info['pnl'] = float(trade_info_data['pnl'])
-                    elif 'profit' in trade_info_data:
-                        trade_info['pnl'] = float(trade_info_data['profit'])
+                # Рассчитываем PnL более точным способом
+                trade_info['pnl'] = self._calculate_trade_pnl(trade)
                 
                 # Добавляем сделку в список новых сделок
                 new_trades.append(trade_info)
@@ -213,6 +207,119 @@ class TradeReporter:
             logger.error(f"Ошибка при получении новых сделок: {e}")
             logger.error(traceback.format_exc())
             return []
+    
+    def _calculate_trade_pnl(self, trade: Dict) -> float:
+        """
+        Рассчитывает PNL для сделки, используя различные источники данных.
+        
+        Args:
+            trade: Данные о сделке от API биржи
+            
+        Returns:
+            float: Значение PNL или 0, если не удалось рассчитать
+        """
+        try:
+            # Извлекаем информацию из API ответа
+            info = trade.get('info', {})
+            
+            # Список полей, которые могут содержать PNL в Bitget API
+            pnl_fields = [
+                'pnl',           # Основное поле PNL
+                'profit',        # Прибыль
+                'realizedPnl',   # Реализованная прибыль/убыток
+                'totalPnl',      # Общий PNL
+                'netProfit',     # Чистая прибыль
+                'realPnl',       # Реальный PNL (возможная вариация)
+                'tradePnl',      # PNL сделки
+                'closePnl'       # PNL при закрытии
+            ]
+            
+            # Пытаемся найти PNL в различных полях
+            for field in pnl_fields:
+                if field in info and info[field] is not None:
+                    try:
+                        pnl_value = float(info[field])
+                        if pnl_value != 0:  # Если найдено ненулевое значение
+                            logger.debug(f"PNL найден в поле '{field}': {pnl_value} для сделки {trade.get('id')}")
+                            return pnl_value
+                    except (ValueError, TypeError):
+                        continue
+            
+            # Если PNL не найден в API, пытаемся рассчитать вручную для фьючерсов
+            calculated_pnl = self._manual_pnl_calculation(trade)
+            if calculated_pnl is not None:
+                logger.debug(f"PNL рассчитан вручную: {calculated_pnl} для сделки {trade.get('id')}")
+                return calculated_pnl
+            
+            # Логируем отсутствие PNL для отладки
+            logger.warning(f"Не удалось найти или рассчитать PNL для сделки {trade.get('id')} ({trade.get('symbol')})")
+            logger.debug(f"Доступные поля в info: {list(info.keys()) if info else 'info отсутствует'}")
+            
+            return 0.0
+            
+        except Exception as e:
+            logger.error(f"Ошибка при расчете PNL для сделки {trade.get('id')}: {e}")
+            return 0.0
+    
+    def _manual_pnl_calculation(self, trade: Dict) -> Optional[float]:
+        """
+        Ручной расчет PNL для фьючерсных сделок.
+        
+        Args:
+            trade: Данные о сделке
+            
+        Returns:
+            float: Рассчитанный PNL или None, если расчет невозможен
+        """
+        try:
+            info = trade.get('info', {})
+            
+            # Для фьючерсов нужны данные о входной и выходной цене
+            # Пытаемся извлечь данные о позиции
+            side = trade.get('side')  # buy или sell
+            amount = float(trade.get('amount', 0))
+            price = float(trade.get('price', 0))
+            
+            # Для точного расчета PNL фьючерсов нужна информация о:
+            # 1. Цене входа в позицию (может отличаться от цены текущей сделки)
+            # 2. Размере позиции
+            # 3. Направлении позиции (long/short)
+            
+            # Пытаемся найти дополнительную информацию в info
+            entry_price = None
+            position_side = None
+            
+            # Возможные поля для цены входа и направления позиции
+            for price_field in ['entryPrice', 'avgPrice', 'openPrice', 'posSide']:
+                if price_field in info:
+                    if price_field == 'posSide':
+                        position_side = info[price_field]
+                    else:
+                        try:
+                            entry_price = float(info[price_field])
+                        except (ValueError, TypeError):
+                            continue
+            
+            # Если у нас есть достаточно данных для расчета
+            if entry_price and position_side and amount > 0:
+                # Расчет PNL для фьючерсов
+                if position_side.lower() == 'long':
+                    # Для длинной позиции: PNL = (цена_закрытия - цена_входа) * размер
+                    pnl = (price - entry_price) * amount
+                elif position_side.lower() == 'short':
+                    # Для короткой позиции: PNL = (цена_входа - цена_закрытия) * размер
+                    pnl = (entry_price - price) * amount
+                else:
+                    return None
+                
+                logger.debug(f"Ручной расчет PNL: {position_side} позиция, вход={entry_price}, выход={price}, размер={amount}, PNL={pnl}")
+                return pnl
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Ошибка при ручном расчете PNL: {e}")
+            return None
 
     def _generate_excel_report(self):
         """Создает Excel-отчет со всеми сделками и форматирует его"""
